@@ -160,10 +160,6 @@
                             <i data-lucide="user-check" class="w-3.5 h-3.5 text-emerald-600"></i>
                             <span id="active-admin-email" class="font-medium truncate max-w-[160px]">admin</span>
                         </div>
-                        <button onclick="seedInitialCloudData()" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition" title="Isi data contoh ke Cloud jika database masih kosong">
-                            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
-                            <span class="hidden sm:inline">Isi Data Contoh</span>
-                        </button>
                         <button onclick="handleAdminLogout()" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg border border-red-200 transition" title="Keluar dari Akun Admin">
                             <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
                             <span>Keluar</span>
@@ -757,7 +753,6 @@
         import {
             getFirestore,
             doc,
-            setDoc,
             addDoc,
             updateDoc,
             deleteDoc,
@@ -983,110 +978,6 @@
 
             unsubscribeListeners.push(unsubStocks, unsubPatterns, unsubOrders);
         }
-
-        window.seedInitialCloudData = async function() {
-            if (!currentUser) return;
-            try {
-                const batch = writeBatch(db);
-                const today = new Date().toISOString().split('T')[0];
-
-                const sampleStocks = [
-                    { id: 'stk-pp14', name: 'Cup PP Datar 14oz (7gr)', category: 'Cup PP', size: '14oz', qty: 3500, minAlert: 1000, hpp: 220 },
-                    { id: 'stk-pp16', name: 'Cup PP Datar 16oz (7gr)', category: 'Cup PP', size: '16oz', qty: 4200, minAlert: 1500, hpp: 250 },
-                    { id: 'stk-oval16', name: 'Cup PP Oval 16oz (8gr)', category: 'Cup PP', size: '16oz Oval', qty: 850, minAlert: 1000, hpp: 310 },
-                    { id: 'stk-pp22', name: 'Cup PP Jumbo 22oz (9gr)', category: 'Cup PP', size: '22oz', qty: 2400, minAlert: 1000, hpp: 360 },
-                    { id: 'stk-lid-flat', name: 'Lid Datar Bening 92mm', category: 'Lid / Tutup', size: '92mm', qty: 5000, minAlert: 1500, hpp: 85 },
-                    { id: 'stk-lid-dome', name: 'Lid Cembung Dome 92mm', category: 'Lid / Tutup', size: '92mm', qty: 600, minAlert: 1000, hpp: 110 }
-                ];
-
-                sampleStocks.forEach(s => {
-                    const { id, ...data } = s;
-                    batch.set(getDocRef('stocks', id), data);
-                });
-
-                const samplePatterns = [
-                    {
-                        id: 'pat-16oz-500',
-                        name: 'PP 16oz 7gr + Sablon 1 Warna (Grosir 500)',
-                        stockId: 'stk-pp16',
-                        lidId: '',
-                        colors: '1 Warna (1-2 Sisi)',
-                        minQty: 500,
-                        printCost: 120,
-                        packCost: 30,
-                        margin: 150,
-                        feeAdmin: 6.5,
-                        feeOngkir: 4.0,
-                        feePromo: 1.5,
-                        unitPrice: 625,
-                        totalHppPerPcs: 400
-                    },
-                    {
-                        id: 'pat-16oz-1000',
-                        name: 'PP 16oz 7gr + Sablon 1 Warna (Partai 1.000)',
-                        stockId: 'stk-pp16',
-                        lidId: '',
-                        colors: '1 Warna (1-2 Sisi)',
-                        minQty: 1000,
-                        printCost: 95,
-                        packCost: 25,
-                        margin: 120,
-                        feeAdmin: 6.5,
-                        feeOngkir: 4.0,
-                        feePromo: 1.5,
-                        unitPrice: 557,
-                        totalHppPerPcs: 370
-                    },
-                    {
-                        id: 'pat-oval16-2w',
-                        name: 'PP Oval 16oz + Sablon 2 Warna + Lid Datar',
-                        stockId: 'stk-oval16',
-                        lidId: 'stk-lid-flat',
-                        colors: '2 Warna',
-                        minQty: 500,
-                        printCost: 180,
-                        packCost: 35,
-                        margin: 180,
-                        feeAdmin: 6.5,
-                        feeOngkir: 4.0,
-                        feePromo: 1.5,
-                        unitPrice: 898,
-                        totalHppPerPcs: 610
-                    }
-                ];
-
-                samplePatterns.forEach(p => {
-                    const { id, ...data } = p;
-                    batch.set(getDocRef('patterns', id), data);
-                });
-
-                const sampleOrderRef = doc(getColRef('orders'));
-                batch.set(sampleOrderRef, {
-                    date: today,
-                    createdAt: Date.now(),
-                    code: '261125SHP881',
-                    customer: 'Es Teh Nusantara Cab. Bekasi',
-                    channel: 'Shopee',
-                    patternId: 'pat-16oz-1000',
-                    patternName: 'PP 16oz 7gr + Sablon 1 Warna (Partai 1.000)',
-                    stockId: 'stk-pp16',
-                    lidId: '',
-                    qty: 1000,
-                    unitPrice: 557,
-                    hppPerPcs: 370,
-                    feePct: 12,
-                    status: 'Proses Sablon',
-                    notes: 'Logo hijau tua 2 sisi depan belakang',
-                    createdBy: currentUser.email || 'admin'
-                });
-
-                await batch.commit();
-                showToast("Data contoh berhasil dikirim ke Cloud Firestore!");
-            } catch (err) {
-                console.error(err);
-                showToast("Gagal mengirim data contoh: " + err.message, "error");
-            }
-        };
 
 
         // =========================================================================
@@ -1877,7 +1768,7 @@
         function renderInventoryGrid() {
             const grid = document.getElementById('inventory-grid');
             if (appState.stocks.length === 0) {
-                grid.innerHTML = `<div class="col-span-full bg-white p-8 rounded-2xl border border-slate-200 text-center text-slate-400">Belum ada item stok gudang di Cloud. Klik "Tambah Item Stok Baru" atau "Isi Data Contoh".</div>`;
+                grid.innerHTML = `<div class="col-span-full bg-white p-8 rounded-2xl border border-slate-200 text-center text-slate-400">Belum ada item stok gudang di Cloud. Klik "Tambah Item Stok Baru" untuk mulai mencatat stok.</div>`;
                 return;
             }
 
