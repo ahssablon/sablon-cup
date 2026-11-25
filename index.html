@@ -1,0 +1,1754 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CupPrint Pro — Manajemen Stok & Pattern Harga Shopee</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        shopee: {
+                            50: '#fff5f2',
+                            100: '#ffe6de',
+                            500: '#ee4d2d',
+                            600: '#d73211',
+                            700: '#b52408',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar untuk tampilan lebih bersih */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .tab-active {
+            border-bottom: 2px solid #ee4d2d;
+            color: #ee4d2d;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- Toast Notification Container (Pengganti alert) -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+    <!-- Top Navigation Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Brand Logo -->
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-shopee-500 to-orange-600 flex items-center justify-center text-white shadow-md">
+                        <i data-lucide="cup-soda" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold text-slate-900 leading-tight flex items-center gap-2">
+                            CupPrint <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-shopee-100 text-shopee-600">Pro</span>
+                        </h1>
+                        <p class="text-xs text-slate-500 hidden sm:block">Stok, Pattern Harga Shopee & Produksi Sablon</p>
+                    </div>
+                </div>
+
+                <!-- Backup & Demo Controls -->
+                <div class="flex items-center gap-2">
+                    <button onclick="loadDemoData()" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition" title="Isi data contoh untuk simulasi">
+                        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                        <span class="hidden sm:inline">Isi Data Demo</span>
+                    </button>
+                    <button onclick="exportBackupJSON()" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white hover:bg-slate-100 rounded-lg border border-slate-300 transition" title="Unduh Backup Data (JSON)">
+                        <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                        <span class="hidden md:inline">Backup</span>
+                    </button>
+                    <label class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white hover:bg-slate-100 rounded-lg border border-slate-300 transition cursor-pointer" title="Pulihkan Data dari File JSON">
+                        <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+                        <span class="hidden md:inline">Restore</span>
+                        <input type="file" id="import-json-input" accept=".json" class="hidden" onchange="importBackupJSON(event)">
+                    </label>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <nav class="flex space-x-6 overflow-x-auto no-scrollbar border-t border-slate-100 pt-1">
+                <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn tab-active flex items-center gap-2 py-3 px-1 text-sm whitespace-nowrap transition">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                    Dashboard
+                </button>
+                <button onclick="switchTab('sales')" id="tab-sales" class="tab-btn flex items-center gap-2 py-3 px-1 text-sm text-slate-600 hover:text-slate-900 whitespace-nowrap transition">
+                    <i data-lucide="shopping-bag" class="w-4 h-4"></i>
+                    Penjualan & Produksi
+                    <span id="badge-active-orders" class="ml-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-amber-100 text-amber-800">0</span>
+                </button>
+                <button onclick="switchTab('patterns')" id="tab-patterns" class="tab-btn flex items-center gap-2 py-3 px-1 text-sm text-slate-600 hover:text-slate-900 whitespace-nowrap transition">
+                    <i data-lucide="tags" class="w-4 h-4"></i>
+                    Pattern Harga Shopee
+                </button>
+                <button onclick="switchTab('inventory')" id="tab-inventory" class="tab-btn flex items-center gap-2 py-3 px-1 text-sm text-slate-600 hover:text-slate-900 whitespace-nowrap transition">
+                    <i data-lucide="package" class="w-4 h-4"></i>
+                    Stok Cup & Bahan
+                    <span id="badge-low-stock" class="hidden ml-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-red-100 text-red-700">!</span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- ========================================== -->
+        <!-- 1. TAB DASHBOARD RINGKASAN                 -->
+        <!-- ========================================== -->
+        <section id="view-dashboard" class="space-y-6">
+            <!-- Filter Periode & Quick Actions -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900">Ringkasan Performa Usaha</h2>
+                    <p class="text-xs text-slate-500">Pantau omzet kotor, estimasi bersih pasca-potongan Shopee, dan kesehatan stok.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <select id="dashboard-period" onchange="renderDashboard()" class="text-sm border border-slate-300 rounded-xl px-3 py-2 bg-slate-50 focus:ring-2 focus:ring-shopee-500 outline-none">
+                        <option value="all">Semua Waktu</option>
+                        <option value="month" selected>Bulan Ini</option>
+                        <option value="today">Hari Ini</option>
+                    </select>
+                    <button onclick="switchTab('sales'); openNewOrderModal();" class="inline-flex items-center gap-2 px-4 py-2 bg-shopee-500 hover:bg-shopee-600 text-white text-sm font-semibold rounded-xl shadow-sm transition">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                        Catat Penjualan Baru
+                    </button>
+                </div>
+            </div>
+
+            <!-- KPI Cards Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Omzet Kotor -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Omzet Kotor</span>
+                        <div class="p-2 bg-blue-50 text-blue-600 rounded-xl">
+                            <i data-lucide="wallet" class="w-5 h-5"></i>
+                        </div>
+                    </div>
+                    <div id="kpi-gross-revenue" class="text-2xl font-extrabold text-slate-900">Rp 0</div>
+                    <p class="text-xs text-slate-500 mt-1">Total nilai transaksi pembeli</p>
+                </div>
+
+                <!-- Estimasi Pendapatan Bersih (Setelah Potongan Admin & HPP) -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Estimasi Cair (Bersih)</span>
+                        <div class="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
+                            <i data-lucide="badge-dollar-sign" class="w-5 h-5"></i>
+                        </div>
+                    </div>
+                    <div id="kpi-net-payout" class="text-2xl font-extrabold text-emerald-600">Rp 0</div>
+                    <p id="kpi-net-profit-info" class="text-xs text-slate-500 mt-1">Est. Profit Bersih: Rp 0</p>
+                </div>
+
+                <!-- Total Cup Terjual -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Cup Terjual</span>
+                        <div class="p-2 bg-orange-50 text-shopee-500 rounded-xl">
+                            <i data-lucide="cup-soda" class="w-5 h-5"></i>
+                        </div>
+                    </div>
+                    <div id="kpi-cups-sold" class="text-2xl font-extrabold text-slate-900">0 <span class="text-sm font-normal text-slate-500">pcs</span></div>
+                    <p id="kpi-order-count" class="text-xs text-slate-500 mt-1">Dari 0 pesanan tercatat</p>
+                </div>
+
+                <!-- Antrean Produksi Sablon -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Antrean Sablon</span>
+                        <div class="p-2 bg-amber-50 text-amber-600 rounded-xl">
+                            <i data-lucide="printer" class="w-5 h-5"></i>
+                        </div>
+                    </div>
+                    <div id="kpi-pending-production" class="text-2xl font-extrabold text-amber-600">0 <span class="text-sm font-normal text-slate-500">order</span></div>
+                    <p id="kpi-pending-cups" class="text-xs text-slate-500 mt-1">0 pcs belum selesai cetak</p>
+                </div>
+            </div>
+
+            <!-- Two Column Section: Low Stock Alerts & Recent Orders -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Peringatan Stok Menipis -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                    <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                        <h3 class="font-bold text-slate-800 flex items-center gap-2 text-sm">
+                            <i data-lucide="alert-triangle" class="w-4 h-4 text-red-500"></i>
+                            Peringatan Stok Menipis
+                        </h3>
+                        <button onclick="switchTab('inventory')" class="text-xs font-semibold text-shopee-500 hover:underline">Kelola Stok</button>
+                    </div>
+                    <div id="dashboard-low-stock-list" class="p-4 space-y-3 flex-grow">
+                        <!-- Diisi oleh JS -->
+                    </div>
+                </div>
+
+                <!-- Pesanan Terbaru & Status Produksi -->
+                <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                    <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                        <h3 class="font-bold text-slate-800 flex items-center gap-2 text-sm">
+                            <i data-lucide="clock" class="w-4 h-4 text-indigo-600"></i>
+                            Pesanan Terbaru & Progress Sablon
+                        </h3>
+                        <button onclick="switchTab('sales')" class="text-xs font-semibold text-shopee-500 hover:underline">Lihat Semua</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-100 text-xs text-slate-500 bg-slate-50">
+                                    <th class="py-2.5 px-4 font-semibold">Pembeli / Channel</th>
+                                    <th class="py-2.5 px-4 font-semibold">Pattern Cup</th>
+                                    <th class="py-2.5 px-4 font-semibold text-right">Qty</th>
+                                    <th class="py-2.5 px-4 font-semibold text-right">Total</th>
+                                    <th class="py-2.5 px-4 font-semibold text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dashboard-recent-orders" class="divide-y divide-slate-100 text-sm">
+                                <!-- Diisi oleh JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ========================================== -->
+        <!-- 2. TAB PENJUALAN & PRODUKSI (SALES TRACKER)-->
+        <!-- ========================================== -->
+        <section id="view-sales" class="hidden space-y-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900">Pencatatan Penjualan & Antrean Sablon</h2>
+                    <p class="text-xs text-slate-500">Setiap pesanan yang dicatat akan otomatis memotong stok cup polos terkait.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="exportSalesCSV()" class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-sm font-semibold rounded-xl transition">
+                        <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                        Export Excel (CSV)
+                    </button>
+                    <button onclick="openNewOrderModal()" class="inline-flex items-center gap-1.5 px-4 py-2 bg-shopee-500 hover:bg-shopee-600 text-white text-sm font-semibold rounded-xl shadow-sm transition">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        Input Pesanan Baru
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filter & Search Bar -->
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-3">
+                <div class="relative flex-grow">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3"></i>
+                    <input type="text" id="sales-search" oninput="renderSalesTable()" placeholder="Cari No. Pesanan Shopee, Nama Toko/Pembeli, atau Catatan Sablon..." class="w-full pl-10 pr-4 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-shopee-500 outline-none">
+                </div>
+                <select id="sales-filter-channel" onchange="renderSalesTable()" class="text-sm border border-slate-300 rounded-xl px-3 py-2 bg-white outline-none">
+                    <option value="all">Semua Channel</option>
+                    <option value="Shopee">Shopee</option>
+                    <option value="WhatsApp">WhatsApp / Direct</option>
+                    <option value="Tokopedia">Tokopedia / TikTok</option>
+                    <option value="Offline">Offline / Toko</option>
+                </select>
+                <select id="sales-filter-status" onchange="renderSalesTable()" class="text-sm border border-slate-300 rounded-xl px-3 py-2 bg-white outline-none">
+                    <option value="all">Semua Status</option>
+                    <option value="Perlu Desain">Perlu Desain</option>
+                    <option value="Proses Sablon">Proses Sablon</option>
+                    <option value="Siap Kirim">Siap Kirim</option>
+                    <option value="Selesai">Selesai</option>
+                    <option value="Dibatalkan">Dibatalkan</option>
+                </select>
+            </div>
+
+            <!-- Sales Table -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-500 bg-slate-50">
+                                <th class="py-3.5 px-4">Tanggal & Order ID</th>
+                                <th class="py-3.5 px-4">Pembeli / Brand</th>
+                                <th class="py-3.5 px-4">Pattern & Spesifikasi</th>
+                                <th class="py-3.5 px-4 text-right">Qty (pcs)</th>
+                                <th class="py-3.5 px-4 text-right">Omzet & Cair</th>
+                                <th class="py-3.5 px-4 text-center">Status Produksi</th>
+                                <th class="py-3.5 px-4 text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sales-table-body" class="divide-y divide-slate-100 text-sm">
+                            <!-- Diisi oleh JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ========================================== -->
+        <!-- 3. TAB PATTERN HARGA SHOPEE & KALKULATOR   -->
+        <!-- ========================================== -->
+        <section id="view-patterns" class="hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- Kolom Kiri: Generator & Kalkulator Pattern Harga -->
+                <div class="lg:col-span-5 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4 h-fit">
+                    <div class="border-b border-slate-100 pb-3">
+                        <span class="text-xs font-bold uppercase tracking-wider text-shopee-500">Shopee Pricing Engine</span>
+                        <h2 class="text-lg font-bold text-slate-900">Buat Pattern Variasi & Harga</h2>
+                        <p class="text-xs text-slate-500">Hitung otomatis harga jual agar aman dari potongan biaya admin & layanan Shopee.</p>
+                    </div>
+
+                    <form id="pattern-form" onsubmit="savePattern(event)" class="space-y-3.5">
+                        <input type="hidden" id="pattern-edit-id">
+                        
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Pattern / Variasi Utama *</label>
+                            <input type="text" id="pat-name" required placeholder="Contoh: Cup PP 16oz 7gr + Sablon 1 Warna" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-shopee-500 outline-none">
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Bahan Cup Polos (Terkait Stok) *</label>
+                                <select id="pat-stock-id" required onchange="calculatePatternPreview()" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-shopee-500 outline-none">
+                                    <!-- Diisi JS dari data stok -->
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Variasi Warna Sablon *</label>
+                                <select id="pat-colors" onchange="calculatePatternPreview()" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-shopee-500 outline-none">
+                                    <option value="Polos (Tanpa Sablon)">Polos (Tanpa Sablon)</option>
+                                    <option value="1 Warna (1-2 Sisi)" selected>1 Warna (1-2 Sisi)</option>
+                                    <option value="2 Warna">2 Warna</option>
+                                    <option value="3 Warna">3 Warna</option>
+                                    <option value="Full Color / Printing">Full Color / Printing</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Tier Minimal Order (pcs) *</label>
+                                <input type="number" id="pat-min-qty" required min="1" value="500" oninput="calculatePatternPreview()" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-shopee-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Include Tutup (Lid)?</label>
+                                <select id="pat-lid-id" onchange="calculatePatternPreview()" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-shopee-500 outline-none">
+                                    <option value="">Tanpa Tutup (Cup Saja)</option>
+                                    <!-- Diisi JS jika ada item lid di stok -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Rincian Biaya Modal & Operasional per pcs -->
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5">
+                            <p class="text-xs font-bold text-slate-700 flex items-center justify-between">
+                                <span>Komponen Modal & Margin (per pcs)</span>
+                                <span id="preview-cup-hpp" class="text-slate-500 font-normal">HPP Cup: Rp 0</span>
+                            </p>
+                            <div class="grid grid-cols-3 gap-2">
+                                <div>
+                                    <label class="block text-[11px] text-slate-600 mb-0.5">Jasa & Tinta (Rp)</label>
+                                    <input type="number" id="pat-print-cost" min="0" value="120" oninput="calculatePatternPreview()" class="w-full px-2.5 py-1.5 text-sm border border-slate-300 rounded-lg bg-white outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] text-slate-600 mb-0.5">Packing/Film (Rp)</label>
+                                    <input type="number" id="pat-pack-cost" min="0" value="30" oninput="calculatePatternPreview()" class="w-full px-2.5 py-1.5 text-sm border border-slate-300 rounded-lg bg-white outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] text-emerald-700 font-semibold mb-0.5">Target Laba (Rp)</label>
+                                    <input type="number" id="pat-margin" min="0" value="150" oninput="calculatePatternPreview()" class="w-full px-2.5 py-1.5 text-sm border border-emerald-300 rounded-lg bg-emerald-50/50 font-semibold text-emerald-800 outline-none">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pengaturan Potongan Shopee -->
+                        <div class="p-3 bg-shopee-50/70 rounded-xl border border-shopee-200 space-y-2.5">
+                            <p class="text-xs font-bold text-shopee-700 flex items-center gap-1.5">
+                                <i data-lucide="percent" class="w-3.5 h-3.5"></i>
+                                Simulasi Potongan Biaya Shopee (%)
+                            </p>
+                            <div class="grid grid-cols-3 gap-2">
+                                <div>
+                                    <label class="block text-[11px] text-slate-700 mb-0.5">Admin Kategori %</label>
+                                    <input type="number" step="0.1" id="pat-fee-admin" min="0" max="50" value="6.5" oninput="calculatePatternPreview()" class="w-full px-2.5 py-1.5 text-sm border border-shopee-200 rounded-lg bg-white outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] text-slate-700 mb-0.5">Gratis Ongkir %</label>
+                                    <input type="number" step="0.1" id="pat-fee-ongkir" min="0" max="50" value="4.0" oninput="calculatePatternPreview()" class="w-full px-2.5 py-1.5 text-sm border border-shopee-200 rounded-lg bg-white outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] text-slate-700 mb-0.5">Promo XTRA %</label>
+                                    <input type="number" step="0.1" id="pat-fee-promo" min="0" max="50" value="1.5" oninput="calculatePatternPreview()" class="w-full px-2.5 py-1.5 text-sm border border-shopee-200 rounded-lg bg-white outline-none">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Hasil Kalkulasi Live -->
+                        <div class="bg-slate-900 text-white p-4 rounded-xl space-y-2">
+                            <div class="flex justify-between text-xs text-slate-300">
+                                <span>Total Modal Produksi / pcs:</span>
+                                <span id="calc-total-hpp" class="font-semibold text-white">Rp 0</span>
+                            </div>
+                            <div class="flex justify-between text-xs text-slate-300">
+                                <span>Total Potongan Shopee (<span id="calc-total-fee-pct">12</span>%):</span>
+                                <span id="calc-shopee-fee-rp" class="font-semibold text-orange-400">Rp 0 / pcs</span>
+                            </div>
+                            <div class="border-t border-slate-700 pt-2 flex items-baseline justify-between">
+                                <div>
+                                    <span class="text-xs text-slate-400 block">Harga Jual Shopee / pcs</span>
+                                    <span id="calc-final-unit-price" class="text-xl font-extrabold text-emerald-400">Rp 0</span>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-xs text-slate-400 block">Harga Paket (<span id="calc-tier-label">500</span> pcs)</span>
+                                    <span id="calc-final-pack-price" class="text-base font-bold text-white">Rp 0</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2 pt-1">
+                            <button type="submit" class="flex-grow py-2.5 px-4 bg-shopee-500 hover:bg-shopee-600 text-white text-sm font-semibold rounded-xl shadow-sm transition flex items-center justify-center gap-2">
+                                <i data-lucide="save" class="w-4 h-4"></i>
+                                <span id="btn-save-pattern-text">Simpan Pattern Harga</span>
+                            </button>
+                            <button type="button" id="btn-cancel-pattern" onclick="resetPatternForm()" class="hidden py-2.5 px-3 bg-slate-200 hover:bg-slate-300 text-slate-700 text-sm font-semibold rounded-xl transition">
+                                Batal
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Kolom Kanan: Daftar Pattern Tersimpan & Export ke Shopee -->
+                <div class="lg:col-span-7 space-y-4">
+                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                            <h3 class="font-bold text-slate-900">Daftar Pattern Variasi Shopee</h3>
+                            <p class="text-xs text-slate-500">Gunakan template ini saat input variasi produk di Shopee Seller Centre.</p>
+                        </div>
+                        <button onclick="copyAllPatternsForShopee()" class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl shadow-sm transition shrink-0">
+                            <i data-lucide="copy" class="w-4 h-4"></i>
+                            Salin Format Deskripsi Shopee
+                        </button>
+                    </div>
+
+                    <div id="patterns-list-container" class="space-y-3">
+                        <!-- Kartu pattern diisi oleh JS -->
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+
+        <!-- ========================================== -->
+        <!-- 4. TAB MANAJEMEN STOK CUP POLOS & BAHAN    -->
+        <!-- ========================================== -->
+        <section id="view-inventory" class="hidden space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900">Stok Bahan Baku Cup Polos & Tutup (Lid)</h2>
+                    <p class="text-xs text-slate-500">Kelola jumlah stok gudang dan HPP modal per pcs sebagai dasar kalkulator harga.</p>
+                </div>
+                <button onclick="openStockModal()" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold rounded-xl shadow-sm transition">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    Tambah Item Stok Baru
+                </button>
+            </div>
+
+            <!-- Grid Kartu Stok -->
+            <div id="inventory-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Diisi oleh JS -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-4 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
+            <p><strong>CupPrint Pro</strong> — Sistem Manajemen Usaha Cup Sablon & E-Commerce</p>
+            <p>Data tersimpan otomatis di browser Anda (LocalStorage).</p>
+        </div>
+    </footer>
+
+
+    <!-- ========================================== -->
+    <!-- MODAL 1: INPUT PESANAN BARU (SALES)        -->
+    <!-- ========================================== -->
+    <div id="modal-order" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden animate-fade-in">
+            <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                <h3 class="font-bold text-slate-900 flex items-center gap-2">
+                    <i data-lucide="shopping-bag" class="w-5 h-5 text-shopee-500"></i>
+                    Catat Penjualan Cup Sablon
+                </h3>
+                <button onclick="closeModal('modal-order')" class="p-1 text-slate-400 hover:text-slate-600 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form id="order-form" onsubmit="submitNewOrder(event)" class="p-5 space-y-4 max-h-[85vh] overflow-y-auto">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Tanggal Pesanan *</label>
+                        <input type="date" id="ord-date" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-shopee-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Channel Penjualan *</label>
+                        <select id="ord-channel" onchange="onOrderPatternChange()" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl bg-white outline-none focus:ring-2 focus:ring-shopee-500">
+                            <option value="Shopee">Shopee</option>
+                            <option value="WhatsApp">WhatsApp / Direct</option>
+                            <option value="Tokopedia">Tokopedia / TikTok</option>
+                            <option value="Offline">Offline / Toko</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">No. Pesanan / Invoice</label>
+                        <input type="text" id="ord-code" placeholder="Contoh: 261125ABCD12" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-shopee-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Pembeli / Brand Cafe *</label>
+                        <input type="text" id="ord-customer" required placeholder="Contoh: Kopi Kenangan Senja" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-shopee-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Pilih Pattern Cup & Sablon *</label>
+                    <select id="ord-pattern-id" required onchange="onOrderPatternChange()" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl bg-white outline-none focus:ring-2 focus:ring-shopee-500">
+                        <!-- Diisi oleh JS -->
+                    </select>
+                    <p id="ord-stock-availability" class="text-xs mt-1 text-slate-500">Sisa stok cup polos: -</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Jumlah Order (pcs) *</label>
+                        <input type="number" id="ord-qty" required min="1" value="500" oninput="recalcOrderTotal()" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-shopee-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Harga Jual / pcs (Rp) *</label>
+                        <input type="number" id="ord-unit-price" required min="0" oninput="recalcOrderTotal()" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-shopee-500">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Potongan Admin Channel (%)</label>
+                        <input type="number" step="0.1" id="ord-fee-pct" min="0" max="50" value="12" oninput="recalcOrderTotal()" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-shopee-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Status Awal Produksi</label>
+                        <select id="ord-status" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl bg-white outline-none focus:ring-2 focus:ring-shopee-500">
+                            <option value="Perlu Desain">Perlu Desain / ACC</option>
+                            <option value="Proses Sablon">Proses Sablon</option>
+                            <option value="Siap Kirim">Siap Kirim</option>
+                            <option value="Selesai">Selesai</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Catatan Sablon (Warna Tinta / Posisi Logo)</label>
+                    <input type="text" id="ord-notes" placeholder="Contoh: Tinta Hitam 2 sisi, logo kirim via WA" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-shopee-500">
+                </div>
+
+                <!-- Ringkasan Transaksi -->
+                <div class="p-3.5 bg-slate-900 text-white rounded-xl flex items-center justify-between">
+                    <div>
+                        <span class="text-xs text-slate-400 block">Total Omzet Kotor</span>
+                        <span id="ord-preview-gross" class="text-base font-bold text-white">Rp 0</span>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs text-slate-400 block">Estimasi Dana Cair</span>
+                        <span id="ord-preview-net" class="text-base font-bold text-emerald-400">Rp 0</span>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeModal('modal-order')" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition">Batal</button>
+                    <button type="submit" class="px-5 py-2 text-sm font-semibold text-white bg-shopee-500 hover:bg-shopee-600 rounded-xl shadow-sm transition">Simpan & Potong Stok</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- MODAL 2: TAMBAH / EDIT ITEM STOK           -->
+    <!-- ========================================== -->
+    <div id="modal-stock" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden">
+            <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                <h3 id="modal-stock-title" class="font-bold text-slate-900">Tambah Stok Cup Polos</h3>
+                <button onclick="closeModal('modal-stock')" class="p-1 text-slate-400 hover:text-slate-600 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form id="stock-form" onsubmit="saveStockItem(event)" class="p-5 space-y-4">
+                <input type="hidden" id="stk-id">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Item Cup / Bahan *</label>
+                    <input type="text" id="stk-name" required placeholder="Contoh: Cup PP Datar 16oz (7gr)" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-shopee-500">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Kategori *</label>
+                        <select id="stk-category" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl bg-white outline-none">
+                            <option value="Cup PP">Cup PP</option>
+                            <option value="Cup PET">Cup PET</option>
+                            <option value="Paper Cup">Paper Cup</option>
+                            <option value="Lid / Tutup">Lid / Tutup</option>
+                            <option value="Tinta & Bahan">Tinta & Bahan</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Ukuran / Spec</label>
+                        <input type="text" id="stk-size" placeholder="Contoh: 16oz / 92mm" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl outline-none">
+                    </div>
+                </div>
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Stok Saat Ini *</label>
+                        <input type="number" id="stk-qty" required min="0" value="1000" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Batas Min. Alert *</label>
+                        <input type="number" id="stk-min" required min="0" value="500" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">HPP / pcs (Rp) *</label>
+                        <input type="number" id="stk-hpp" required min="0" value="250" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl outline-none">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeModal('modal-stock')" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl">Batal</button>
+                    <button type="submit" class="px-5 py-2 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-xl">Simpan Stok</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- MODAL 3: RESTOCK CEPAT (TAMBAH STOK MASUK) -->
+    <!-- ========================================== -->
+    <div id="modal-restock" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full shadow-2xl border border-slate-200 overflow-hidden">
+            <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                <h3 class="font-bold text-slate-900">Restock Barang Masuk</h3>
+                <button onclick="closeModal('modal-restock')" class="p-1 text-slate-400 hover:text-slate-600 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form onsubmit="submitRestock(event)" class="p-5 space-y-4">
+                <input type="hidden" id="restock-id">
+                <div>
+                    <p id="restock-item-name" class="text-sm font-bold text-slate-800"></p>
+                    <p id="restock-current-qty" class="text-xs text-slate-500"></p>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Jumlah Stok Masuk (pcs) *</label>
+                    <input type="number" id="restock-add-qty" required min="1" value="1000" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Update HPP / pcs (Opsional)</label>
+                    <input type="number" id="restock-new-hpp" min="0" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl outline-none">
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeModal('modal-restock')" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl">Batal</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl">Tambah Stok</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- JAVASCRIPT APPLICATION LOGIC               -->
+    <!-- ========================================== -->
+    <script>
+        // ==========================================
+        // 1. STATE MANAGEMENT & LOCALSTORAGE
+        // ==========================================
+        const STORAGE_KEY = 'cupprint_pro_data_v1';
+
+        let appState = {
+            stocks: [],
+            patterns: [],
+            orders: []
+        };
+
+        // Format Rupiah Helper
+        function formatRupiah(num) {
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(Math.round(num || 0));
+        }
+
+        function formatNumber(num) {
+            return new Intl.NumberFormat('id-ID').format(Math.round(num || 0));
+        }
+
+        // Toast Notification Helper (Tanpa alert)
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgColors = {
+                success: 'bg-slate-900 text-white border-l-4 border-emerald-400',
+                error: 'bg-red-900 text-white border-l-4 border-red-400',
+                warning: 'bg-amber-900 text-white border-l-4 border-amber-400'
+            };
+            toast.className = `${bgColors[type] || bgColors.success} px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center justify-between gap-3 pointer-events-auto transition-all duration-300 transform translate-y-0 opacity-100`;
+            toast.innerHTML = `<span>${message}</span>`;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3200);
+        }
+
+        // Load & Save Data
+        function loadState() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                    appState = JSON.parse(raw);
+                } else {
+                    // Inisialisasi awal otomatis dengan data contoh agar user langsung melihat cara kerjanya
+                    seedDefaultData();
+                }
+            } catch (err) {
+                console.error('Gagal memuat data:', err);
+                seedDefaultData();
+            }
+        }
+
+        function saveState() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+                refreshAllViews();
+            } catch (err) {
+                showToast('Gagal menyimpan ke browser storage!', 'error');
+            }
+        }
+
+        // Data Awal / Demo untuk Usaha Cup Sablon
+        function seedDefaultData() {
+            const today = new Date().toISOString().split('T')[0];
+            appState = {
+                stocks: [
+                    { id: 'stk-1', name: 'Cup PP Datar 14oz (7gr)', category: 'Cup PP', size: '14oz', qty: 3500, minAlert: 1000, hpp: 220 },
+                    { id: 'stk-2', name: 'Cup PP Datar 16oz (7gr)', category: 'Cup PP', size: '16oz', qty: 4200, minAlert: 1500, hpp: 250 },
+                    { id: 'stk-3', name: 'Cup PP Oval 16oz (8gr)', category: 'Cup PP', size: '16oz Oval', qty: 850, minAlert: 1000, hpp: 310 },
+                    { id: 'stk-4', name: 'Cup PP Jumbo 22oz (9gr)', category: 'Cup PP', size: '22oz', qty: 2400, minAlert: 1000, hpp: 360 },
+                    { id: 'stk-5', name: 'Lid Datar Bening 92mm', category: 'Lid / Tutup', size: '92mm', qty: 5000, minAlert: 1500, hpp: 85 },
+                    { id: 'stk-6', name: 'Lid Cembung Dome 92mm', category: 'Lid / Tutup', size: '92mm', qty: 600, minAlert: 1000, hpp: 110 }
+                ],
+                patterns: [
+                    {
+                        id: 'pat-1',
+                        name: 'PP 16oz 7gr + Sablon 1 Warna (Grosir 500)',
+                        stockId: 'stk-2',
+                        lidId: '',
+                        colors: '1 Warna (1-2 Sisi)',
+                        minQty: 500,
+                        printCost: 120,
+                        packCost: 30,
+                        margin: 150,
+                        feeAdmin: 6.5,
+                        feeOngkir: 4.0,
+                        feePromo: 1.5,
+                        unitPrice: 625,
+                        totalHppPerPcs: 400
+                    },
+                    {
+                        id: 'pat-2',
+                        name: 'PP 16oz 7gr + Sablon 1 Warna (Partai 1.000)',
+                        stockId: 'stk-2',
+                        lidId: '',
+                        colors: '1 Warna (1-2 Sisi)',
+                        minQty: 1000,
+                        printCost: 95,
+                        packCost: 25,
+                        margin: 120,
+                        feeAdmin: 6.5,
+                        feeOngkir: 4.0,
+                        feePromo: 1.5,
+                        unitPrice: 557,
+                        totalHppPerPcs: 370
+                    },
+                    {
+                        id: 'pat-3',
+                        name: 'PP Oval 16oz + Sablon 2 Warna + Lid Datar',
+                        stockId: 'stk-3',
+                        lidId: 'stk-5',
+                        colors: '2 Warna',
+                        minQty: 500,
+                        printCost: 180,
+                        packCost: 35,
+                        margin: 180,
+                        feeAdmin: 6.5,
+                        feeOngkir: 4.0,
+                        feePromo: 1.5,
+                        unitPrice: 898,
+                        totalHppPerPcs: 610
+                    },
+                    {
+                        id: 'pat-4',
+                        name: 'PP Jumbo 22oz + Sablon 1 Warna (500 pcs)',
+                        stockId: 'stk-4',
+                        lidId: '',
+                        colors: '1 Warna (1-2 Sisi)',
+                        minQty: 500,
+                        printCost: 130,
+                        packCost: 35,
+                        margin: 165,
+                        feeAdmin: 6.5,
+                        feeOngkir: 4.0,
+                        feePromo: 1.5,
+                        unitPrice: 784,
+                        totalHppPerPcs: 525
+                    }
+                ],
+                orders: [
+                    {
+                        id: 'ord-101',
+                        date: today,
+                        code: '261125SHP881',
+                        customer: 'Es Teh Nusantara Cab. Bekasi',
+                        channel: 'Shopee',
+                        patternId: 'pat-2',
+                        patternName: 'PP 16oz 7gr + Sablon 1 Warna (Partai 1.000)',
+                        stockId: 'stk-2',
+                        lidId: '',
+                        qty: 1000,
+                        unitPrice: 557,
+                        hppPerPcs: 370,
+                        feePct: 12,
+                        status: 'Proses Sablon',
+                        notes: 'Logo hijau tua 2 sisi depan belakang'
+                    },
+                    {
+                        id: 'ord-102',
+                        date: today,
+                        code: '261125SHP904',
+                        customer: 'Kopi Sudut Kota',
+                        channel: 'Shopee',
+                        patternId: 'pat-3',
+                        patternName: 'PP Oval 16oz + Sablon 2 Warna + Lid Datar',
+                        stockId: 'stk-3',
+                        lidId: 'stk-5',
+                        qty: 500,
+                        unitPrice: 898,
+                        hppPerPcs: 610,
+                        feePct: 12,
+                        status: 'Perlu Desain',
+                        notes: 'ACC mockup via chat Shopee'
+                    },
+                    {
+                        id: 'ord-103',
+                        date: today,
+                        code: 'WA-0042',
+                        customer: 'Boba Milk Tea Cikarang',
+                        channel: 'WhatsApp',
+                        patternId: 'pat-4',
+                        patternName: 'PP Jumbo 22oz + Sablon 1 Warna (500 pcs)',
+                        stockId: 'stk-4',
+                        lidId: '',
+                        qty: 1000,
+                        unitPrice: 700,
+                        hppPerPcs: 525,
+                        feePct: 0,
+                        status: 'Selesai',
+                        notes: 'Repeat order tinta hitam'
+                    }
+                ]
+            };
+            saveState();
+        }
+
+        function loadDemoData() {
+            seedDefaultData();
+            showToast('Data contoh usaha Cup Sablon berhasil dimuat!');
+        }
+
+
+        // ==========================================
+        // 2. NAVIGATION & MODAL CONTROLS
+        // ==========================================
+        function switchTab(tabName) {
+            const tabs = ['dashboard', 'sales', 'patterns', 'inventory'];
+            tabs.forEach(t => {
+                document.getElementById(`view-${t}`).classList.add('hidden');
+                const btn = document.getElementById(`tab-${t}`);
+                btn.classList.remove('tab-active');
+                btn.classList.add('text-slate-600');
+            });
+
+            document.getElementById(`view-${tabName}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-${tabName}`);
+            activeBtn.classList.add('tab-active');
+            activeBtn.classList.remove('text-slate-600');
+
+            if (tabName === 'patterns') {
+                populatePatternDropdowns();
+                calculatePatternPreview();
+            }
+            lucide.createIcons();
+        }
+
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+
+        // ==========================================
+        // 3. DASHBOARD LOGIC
+        // ==========================================
+        function renderDashboard() {
+            const period = document.getElementById('dashboard-period').value;
+            const now = new Date();
+            const todayStr = now.toISOString().split('T')[0];
+            const currentMonthPrefix = todayStr.slice(0, 7); // YYYY-MM
+
+            // Filter pesanan valid (tidak dibatalkan)
+            const validOrders = appState.orders.filter(o => {
+                if (o.status === 'Dibatalkan') return false;
+                if (period === 'today') return o.date === todayStr;
+                if (period === 'month') return o.date.startsWith(currentMonthPrefix);
+                return true;
+            });
+
+            let grossRevenue = 0;
+            let netPayout = 0;
+            let totalHpp = 0;
+            let totalCups = 0;
+
+            validOrders.forEach(o => {
+                const gross = o.qty * o.unitPrice;
+                const feeAmount = gross * (o.feePct / 100);
+                const payout = gross - feeAmount;
+                const cost = o.qty * (o.hppPerPcs || 0);
+
+                grossRevenue += gross;
+                netPayout += payout;
+                totalHpp += cost;
+                totalCups += o.qty;
+            });
+
+            const netProfit = netPayout - totalHpp;
+
+            // Antrean produksi aktif (seluruh waktu agar tidak terlewat)
+            const activeProduction = appState.orders.filter(o =>
+                ['Perlu Desain', 'Proses Sablon', 'Siap Kirim'].includes(o.status)
+            );
+            const activeCups = activeProduction.reduce((acc, o) => acc + o.qty, 0);
+
+            document.getElementById('kpi-gross-revenue').textContent = formatRupiah(grossRevenue);
+            document.getElementById('kpi-net-payout').textContent = formatRupiah(netPayout);
+            document.getElementById('kpi-net-profit-info').textContent = `Est. Profit Bersih: ${formatRupiah(netProfit)}`;
+            document.getElementById('kpi-cups-sold').innerHTML = `${formatNumber(totalCups)} <span class="text-sm font-normal text-slate-500">pcs</span>`;
+            document.getElementById('kpi-order-count').textContent = `Dari ${validOrders.length} pesanan valid`;
+            document.getElementById('kpi-pending-production').innerHTML = `${activeProduction.length} <span class="text-sm font-normal text-slate-500">order</span>`;
+            document.getElementById('kpi-pending-cups').textContent = `${formatNumber(activeCups)} pcs dalam antrean`;
+
+            // Update badge tab
+            document.getElementById('badge-active-orders').textContent = activeProduction.length;
+
+            // Render Low Stock Alert
+            const lowStocks = appState.stocks.filter(s => s.qty <= s.minAlert);
+            const lowStockBadge = document.getElementById('badge-low-stock');
+            if (lowStocks.length > 0) {
+                lowStockBadge.textContent = lowStocks.length;
+                lowStockBadge.classList.remove('hidden');
+            } else {
+                lowStockBadge.classList.add('hidden');
+            }
+
+            const lowStockListEl = document.getElementById('dashboard-low-stock-list');
+            if (lowStocks.length === 0) {
+                lowStockListEl.innerHTML = `
+                    <div class="text-center py-6 text-slate-400">
+                        <i data-lucide="check-circle-2" class="w-8 h-8 mx-auto text-emerald-500 mb-2"></i>
+                        <p class="text-sm font-medium text-slate-600">Semua Stok Aman!</p>
+                        <p class="text-xs">Tidak ada cup atau bahan di bawah batas minimum.</p>
+                    </div>
+                `;
+            } else {
+                lowStockListEl.innerHTML = lowStocks.map(s => `
+                    <div class="p-3 rounded-xl bg-red-50/70 border border-red-200 flex items-center justify-between gap-2">
+                        <div>
+                            <p class="text-xs font-bold text-slate-900">${s.name}</p>
+                            <p class="text-[11px] text-red-700">Sisa: <strong>${formatNumber(s.qty)} pcs</strong> (Min: ${formatNumber(s.minAlert)})</p>
+                        </div>
+                        <button onclick="openRestockModal('${s.id}')" class="px-2.5 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-lg shrink-0 transition">
+                            + Restock
+                        </button>
+                    </div>
+                `).join('');
+            }
+
+            // Render Recent Orders (5 terbaru)
+            const recentBody = document.getElementById('dashboard-recent-orders');
+            const recentList = [...appState.orders].reverse().slice(0, 5);
+            if (recentList.length === 0) {
+                recentBody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-400 text-xs">Belum ada transaksi penjualan.</td></tr>`;
+            } else {
+                recentBody.innerHTML = recentList.map(o => `
+                    <tr class="hover:bg-slate-50">
+                        <td class="py-3 px-4">
+                            <div class="font-semibold text-slate-900 text-xs">${o.customer}</div>
+                            <div class="text-[11px] text-slate-500">${o.channel} • ${o.date}</div>
+                        </td>
+                        <td class="py-3 px-4 text-xs text-slate-700">${o.patternName}</td>
+                        <td class="py-3 px-4 text-right font-semibold text-xs">${formatNumber(o.qty)}</td>
+                        <td class="py-3 px-4 text-right font-bold text-slate-900 text-xs">${formatRupiah(o.qty * o.unitPrice)}</td>
+                        <td class="py-3 px-4 text-center">${getStatusBadge(o.status)}</td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+
+        // ==========================================
+        // 4. PATTERN HARGA SHOPEE CALCULATOR
+        // ==========================================
+        function populatePatternDropdowns() {
+            const stockSelect = document.getElementById('pat-stock-id');
+            const lidSelect = document.getElementById('pat-lid-id');
+            const currentStockVal = stockSelect.value;
+            const currentLidVal = lidSelect.value;
+
+            const cups = appState.stocks.filter(s => s.category !== 'Lid / Tutup' && s.category !== 'Tinta & Bahan');
+            const lids = appState.stocks.filter(s => s.category === 'Lid / Tutup');
+
+            stockSelect.innerHTML = cups.map(c =>
+                `<option value="${c.id}">${c.name} (HPP: ${formatRupiah(c.hpp)})</option>`
+            ).join('');
+
+            lidSelect.innerHTML = `<option value="">Tanpa Tutup (Cup Saja)</option>` +
+                lids.map(l => `<option value="${l.id}">${l.name} (+${formatRupiah(l.hpp)})</option>`).join('');
+
+            if (currentStockVal && cups.some(c => c.id === currentStockVal)) stockSelect.value = currentStockVal;
+            if (currentLidVal && lids.some(l => l.id === currentLidVal)) lidSelect.value = currentLidVal;
+        }
+
+        function calculatePatternPreview() {
+            const stockId = document.getElementById('pat-stock-id').value;
+            const lidId = document.getElementById('pat-lid-id').value;
+            const minQty = parseInt(document.getElementById('pat-min-qty').value) || 1;
+            const printCost = parseFloat(document.getElementById('pat-print-cost').value) || 0;
+            const packCost = parseFloat(document.getElementById('pat-pack-cost').value) || 0;
+            const margin = parseFloat(document.getElementById('pat-margin').value) || 0;
+
+            const feeAdmin = parseFloat(document.getElementById('pat-fee-admin').value) || 0;
+            const feeOngkir = parseFloat(document.getElementById('pat-fee-ongkir').value) || 0;
+            const feePromo = parseFloat(document.getElementById('pat-fee-promo').value) || 0;
+
+            const stockItem = appState.stocks.find(s => s.id === stockId);
+            const lidItem = appState.stocks.find(s => s.id === lidId);
+
+            const cupHpp = stockItem ? stockItem.hpp : 0;
+            const lidHpp = lidItem ? lidItem.hpp : 0;
+
+            document.getElementById('preview-cup-hpp').textContent = `HPP Cup${lidItem ? '+Lid' : ''}: ${formatRupiah(cupHpp + lidHpp)}`;
+
+            const totalHppPerPcs = cupHpp + lidHpp + printCost + packCost;
+            const targetNetRevenue = totalHppPerPcs + margin;
+            const totalFeePct = feeAdmin + feeOngkir + feePromo;
+
+            // Rumus Harga Jual Shopee agar setelah dipotong fee% hasilnya tepat targetNetRevenue:
+            // HargaJual = TargetNet / (1 - (TotalFeePct / 100))
+            const divisor = Math.max(0.1, 1 - (totalFeePct / 100));
+            const finalUnitPrice = Math.ceil(targetNetRevenue / divisor);
+            const feePerPcs = finalUnitPrice - targetNetRevenue;
+            const finalPackPrice = finalUnitPrice * minQty;
+
+            document.getElementById('calc-total-hpp').textContent = formatRupiah(totalHppPerPcs);
+            document.getElementById('calc-total-fee-pct').textContent = totalFeePct.toFixed(1);
+            document.getElementById('calc-shopee-fee-rp').textContent = `${formatRupiah(feePerPcs)} / pcs`;
+            document.getElementById('calc-final-unit-price').textContent = formatRupiah(finalUnitPrice);
+            document.getElementById('calc-tier-label').textContent = formatNumber(minQty);
+            document.getElementById('calc-final-pack-price').textContent = formatRupiah(finalPackPrice);
+
+            return {
+                totalHppPerPcs,
+                totalFeePct,
+                finalUnitPrice,
+                finalPackPrice
+            };
+        }
+
+        function savePattern(e) {
+            e.preventDefault();
+            const editId = document.getElementById('pattern-edit-id').value;
+            const calc = calculatePatternPreview();
+
+            const patternObj = {
+                id: editId || 'pat-' + Date.now(),
+                name: document.getElementById('pat-name').value.trim(),
+                stockId: document.getElementById('pat-stock-id').value,
+                lidId: document.getElementById('pat-lid-id').value,
+                colors: document.getElementById('pat-colors').value,
+                minQty: parseInt(document.getElementById('pat-min-qty').value) || 100,
+                printCost: parseFloat(document.getElementById('pat-print-cost').value) || 0,
+                packCost: parseFloat(document.getElementById('pat-pack-cost').value) || 0,
+                margin: parseFloat(document.getElementById('pat-margin').value) || 0,
+                feeAdmin: parseFloat(document.getElementById('pat-fee-admin').value) || 0,
+                feeOngkir: parseFloat(document.getElementById('pat-fee-ongkir').value) || 0,
+                feePromo: parseFloat(document.getElementById('pat-fee-promo').value) || 0,
+                unitPrice: calc.finalUnitPrice,
+                totalHppPerPcs: calc.totalHppPerPcs
+            };
+
+            if (editId) {
+                const idx = appState.patterns.findIndex(p => p.id === editId);
+                if (idx !== -1) appState.patterns[idx] = patternObj;
+                showToast('Pattern harga berhasil diperbarui!');
+            } else {
+                appState.patterns.push(patternObj);
+                showToast('Pattern harga Shopee baru tersimpan!');
+            }
+
+            resetPatternForm();
+            saveState();
+        }
+
+        function editPattern(id) {
+            const pat = appState.patterns.find(p => p.id === id);
+            if (!pat) return;
+
+            populatePatternDropdowns();
+            document.getElementById('pattern-edit-id').value = pat.id;
+            document.getElementById('pat-name').value = pat.name;
+            document.getElementById('pat-stock-id').value = pat.stockId;
+            document.getElementById('pat-lid-id').value = pat.lidId || '';
+            document.getElementById('pat-colors').value = pat.colors;
+            document.getElementById('pat-min-qty').value = pat.minQty;
+            document.getElementById('pat-print-cost').value = pat.printCost;
+            document.getElementById('pat-pack-cost').value = pat.packCost;
+            document.getElementById('pat-margin').value = pat.margin;
+            document.getElementById('pat-fee-admin').value = pat.feeAdmin;
+            document.getElementById('pat-fee-ongkir').value = pat.feeOngkir;
+            document.getElementById('pat-fee-promo').value = pat.feePromo;
+
+            document.getElementById('btn-save-pattern-text').textContent = 'Update Pattern Harga';
+            document.getElementById('btn-cancel-pattern').classList.remove('hidden');
+            calculatePatternPreview();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function resetPatternForm() {
+            document.getElementById('pattern-form').reset();
+            document.getElementById('pattern-edit-id').value = '';
+            document.getElementById('btn-save-pattern-text').textContent = 'Simpan Pattern Harga';
+            document.getElementById('btn-cancel-pattern').classList.add('hidden');
+            calculatePatternPreview();
+        }
+
+        function deletePattern(id) {
+            appState.patterns = appState.patterns.filter(p => p.id !== id);
+            saveState();
+            showToast('Pattern harga dihapus.', 'warning');
+        }
+
+        function renderPatternsList() {
+            const container = document.getElementById('patterns-list-container');
+            if (appState.patterns.length === 0) {
+                container.innerHTML = `<div class="bg-white p-8 rounded-2xl border border-slate-200 text-center text-slate-400 text-sm">Belum ada pattern harga. Buat pattern pertama di samping kiri!</div>`;
+                return;
+            }
+
+            container.innerHTML = appState.patterns.map(p => {
+                const stock = appState.stocks.find(s => s.id === p.stockId);
+                const lid = appState.stocks.find(s => s.id === p.lidId);
+                const totalFee = (p.feeAdmin + p.feeOngkir + p.feePromo).toFixed(1);
+                const packPrice = p.unitPrice * p.minQty;
+
+                return `
+                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:border-shopee-300 transition">
+                        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                            <div class="space-y-1">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span class="px-2 py-0.5 text-[11px] font-bold rounded-md bg-shopee-100 text-shopee-700">${p.colors}</span>
+                                    <span class="px-2 py-0.5 text-[11px] font-semibold rounded-md bg-slate-100 text-slate-700">Min. ${formatNumber(p.minQty)} pcs</span>
+                                    ${lid ? `<span class="px-2 py-0.5 text-[11px] font-semibold rounded-md bg-blue-50 text-blue-700">+ ${lid.name}</span>` : ''}
+                                </div>
+                                <h4 class="font-bold text-slate-900 text-base">${p.name}</h4>
+                                <p class="text-xs text-slate-500">
+                                    Bahan: <strong>${stock ? stock.name : 'Item terhapus'}</strong> • Modal: ${formatRupiah(p.totalHppPerPcs)}/pcs • Laba Bersih: <span class="text-emerald-600 font-semibold">${formatRupiah(p.margin)}/pcs</span> • Fee Shopee: ${totalFee}%
+                                </p>
+                            </div>
+
+                            <div class="sm:text-right bg-slate-50 sm:bg-transparent p-2.5 sm:p-0 rounded-xl border sm:border-0 border-slate-100 shrink-0">
+                                <div class="text-xs text-slate-500">Harga Jual Shopee</div>
+                                <div class="text-xl font-extrabold text-shopee-600">${formatRupiah(p.unitPrice)} <span class="text-xs font-normal text-slate-500">/pcs</span></div>
+                                <div class="text-xs font-semibold text-slate-700">Paket ${formatNumber(p.minQty)}: ${formatRupiah(packPrice)}</div>
+                            </div>
+                        </div>
+
+                        <div class="mt-3 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                            <button onclick="copySinglePattern('${p.id}')" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition">
+                                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                                Salin Variasi
+                            </button>
+                            <div class="flex items-center gap-1.5">
+                                <button onclick="editPattern('${p.id}')" class="px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition">Edit</button>
+                                <button onclick="deletePattern('${p.id}')" class="px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg transition">Hapus</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Clipboard Helper (Menggunakan execCommand sesuai standar keamanan iframe)
+        function copyTextToClipboard(text, successMsg) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showToast(successMsg);
+            } catch (err) {
+                showToast('Gagal menyalin teks ke clipboard.', 'error');
+            }
+            document.body.removeChild(textarea);
+        }
+
+        function copySinglePattern(id) {
+            const p = appState.patterns.find(item => item.id === id);
+            if (!p) return;
+            const text = `Variasi: ${p.name}\nSpesifikasi: ${p.colors} | Minimal Order ${p.minQty} pcs\nHarga Satuan: ${formatRupiah(p.unitPrice)}/pcs\nHarga Paket (${p.minQty} pcs): ${formatRupiah(p.unitPrice * p.minQty)}`;
+            copyTextToClipboard(text, 'Detail variasi disalin! Siap paste ke Shopee.');
+        }
+
+        function copyAllPatternsForShopee() {
+            if (appState.patterns.length === 0) {
+                showToast('Belum ada pattern harga untuk disalin.', 'warning');
+                return;
+            }
+            let text = `=== DAFTAR HARGA & VARIASI CUSTOM CUP SABLON ===\n\n`;
+            appState.patterns.forEach((p, idx) => {
+                text += `${idx + 1}. ${p.name}\n`;
+                text += `   - Sablon: ${p.colors}\n`;
+                text += `   - Min. Order: ${p.minQty} pcs (${formatRupiah(p.unitPrice)}/pcs) = ${formatRupiah(p.unitPrice * p.minQty)}\n\n`;
+            });
+            text += `Catatan: Harga sudah termasuk jasa sablon & film. Kirim file logo (PDF/CDR/PNG HD) via chat setelah checkout.`;
+            copyTextToClipboard(text, 'Seluruh katalog pattern berhasil disalin untuk deskripsi Shopee!');
+        }
+
+
+        // ==========================================
+        // 5. SALES TRACKER & AUTO STOCK DEDUCTION
+        // ==========================================
+        function openNewOrderModal() {
+            if (appState.patterns.length === 0) {
+                showToast('Buat minimal 1 Pattern Harga terlebih dahulu!', 'warning');
+                switchTab('patterns');
+                return;
+            }
+            document.getElementById('order-form').reset();
+            document.getElementById('ord-date').value = new Date().toISOString().split('T')[0];
+
+            const patSelect = document.getElementById('ord-pattern-id');
+            patSelect.innerHTML = appState.patterns.map(p =>
+                `<option value="${p.id}">${p.name} — (${formatRupiah(p.unitPrice)}/pcs)</option>`
+            ).join('');
+
+            onOrderPatternChange();
+            openModal('modal-order');
+        }
+
+        function onOrderPatternChange() {
+            const patId = document.getElementById('ord-pattern-id').value;
+            const channel = document.getElementById('ord-channel').value;
+            const pat = appState.patterns.find(p => p.id === patId);
+            if (!pat) return;
+
+            document.getElementById('ord-qty').value = pat.minQty;
+            document.getElementById('ord-unit-price').value = pat.unitPrice;
+
+            // Jika channel Shopee/Tokopedia pakai total fee pattern, jika Offline/WA default 0%
+            if (channel === 'Shopee' || channel === 'Tokopedia') {
+                document.getElementById('ord-fee-pct').value = (pat.feeAdmin + pat.feeOngkir + pat.feePromo).toFixed(1);
+            } else {
+                document.getElementById('ord-fee-pct').value = 0;
+            }
+
+            const stock = appState.stocks.find(s => s.id === pat.stockId);
+            const availEl = document.getElementById('ord-stock-availability');
+            if (stock) {
+                availEl.innerHTML = `Stok Gudang <strong>${stock.name}</strong>: <span class="${stock.qty <= stock.minAlert ? 'text-red-600 font-bold' : 'text-emerald-600 font-bold'}">${formatNumber(stock.qty)} pcs</span>`;
+            } else {
+                availEl.textContent = 'Stok bahan terkait tidak ditemukan.';
+            }
+
+            recalcOrderTotal();
+        }
+
+        function recalcOrderTotal() {
+            const qty = parseInt(document.getElementById('ord-qty').value) || 0;
+            const price = parseFloat(document.getElementById('ord-unit-price').value) || 0;
+            const feePct = parseFloat(document.getElementById('ord-fee-pct').value) || 0;
+
+            const gross = qty * price;
+            const net = gross * (1 - (feePct / 100));
+
+            document.getElementById('ord-preview-gross').textContent = formatRupiah(gross);
+            document.getElementById('ord-preview-net').textContent = formatRupiah(net);
+        }
+
+        function submitNewOrder(e) {
+            e.preventDefault();
+            const patId = document.getElementById('ord-pattern-id').value;
+            const pat = appState.patterns.find(p => p.id === patId);
+            const qty = parseInt(document.getElementById('ord-qty').value) || 0;
+
+            if (!pat || qty <= 0) return;
+
+            // Cek kecukupan stok cup polos
+            const stock = appState.stocks.find(s => s.id === pat.stockId);
+            if (stock && stock.qty < qty) {
+                showToast(`Stok ${stock.name} tidak mencukupi! (Sisa: ${formatNumber(stock.qty)} pcs)`, 'error');
+                return;
+            }
+
+            // Potong stok cup polos secara otomatis
+            if (stock) {
+                stock.qty -= qty;
+            }
+
+            // Potong stok lid jika pattern menyertakan lid
+            if (pat.lidId) {
+                const lidStock = appState.stocks.find(s => s.id === pat.lidId);
+                if (lidStock) {
+                    lidStock.qty = Math.max(0, lidStock.qty - qty);
+                }
+            }
+
+            const newOrder = {
+                id: 'ord-' + Date.now(),
+                date: document.getElementById('ord-date').value,
+                code: document.getElementById('ord-code').value.trim() || ('INV-' + Math.floor(1000 + Math.random() * 9000)),
+                customer: document.getElementById('ord-customer').value.trim(),
+                channel: document.getElementById('ord-channel').value,
+                patternId: pat.id,
+                patternName: pat.name,
+                stockId: pat.stockId,
+                lidId: pat.lidId || '',
+                qty: qty,
+                unitPrice: parseFloat(document.getElementById('ord-unit-price').value) || 0,
+                hppPerPcs: pat.totalHppPerPcs || 0,
+                feePct: parseFloat(document.getElementById('ord-fee-pct').value) || 0,
+                status: document.getElementById('ord-status').value,
+                notes: document.getElementById('ord-notes').value.trim()
+            };
+
+            appState.orders.push(newOrder);
+            closeModal('modal-order');
+            saveState();
+            showToast(`Penjualan dicatat & stok ${stock ? stock.name : 'cup'} berkurang ${formatNumber(qty)} pcs!`);
+        }
+
+        function updateOrderStatus(orderId, newStatus) {
+            const order = appState.orders.find(o => o.id === orderId);
+            if (!order) return;
+
+            const oldStatus = order.status;
+            if (oldStatus === newStatus) return;
+
+            // Jika dibatalkan, kembalikan stok ke gudang
+            if (newStatus === 'Dibatalkan' && oldStatus !== 'Dibatalkan') {
+                const stock = appState.stocks.find(s => s.id === order.stockId);
+                if (stock) stock.qty += order.qty;
+                if (order.lidId) {
+                    const lid = appState.stocks.find(s => s.id === order.lidId);
+                    if (lid) lid.qty += order.qty;
+                }
+                showToast(`Pesanan dibatalkan. Stok ${formatNumber(order.qty)} pcs dikembalikan ke gudang.`, 'warning');
+            } else if (oldStatus === 'Dibatalkan' && newStatus !== 'Dibatalkan') {
+                // Jika diaktifkan kembali dari batal, potong stok lagi
+                const stock = appState.stocks.find(s => s.id === order.stockId);
+                if (stock) stock.qty = Math.max(0, stock.qty - order.qty);
+                if (order.lidId) {
+                    const lid = appState.stocks.find(s => s.id === order.lidId);
+                    if (lid) lid.qty = Math.max(0, lid.qty - order.qty);
+                }
+                showToast(`Status pesanan diaktifkan kembali.`);
+            } else {
+                showToast(`Status produksi diubah ke "${newStatus}"`);
+            }
+
+            order.status = newStatus;
+            saveState();
+        }
+
+        function deleteOrder(orderId) {
+            const order = appState.orders.find(o => o.id === orderId);
+            if (!order) return;
+
+            // Kembalikan stok jika pesanan bukan status Dibatalkan
+            if (order.status !== 'Dibatalkan') {
+                const stock = appState.stocks.find(s => s.id === order.stockId);
+                if (stock) stock.qty += order.qty;
+                if (order.lidId) {
+                    const lid = appState.stocks.find(s => s.id === order.lidId);
+                    if (lid) lid.qty += order.qty;
+                }
+            }
+
+            appState.orders = appState.orders.filter(o => o.id !== orderId);
+            saveState();
+            showToast('Pesanan dihapus & stok dikembalikan.', 'warning');
+        }
+
+        function getStatusBadge(status) {
+            const map = {
+                'Perlu Desain': 'bg-purple-100 text-purple-800 border-purple-200',
+                'Proses Sablon': 'bg-amber-100 text-amber-800 border-amber-200',
+                'Siap Kirim': 'bg-blue-100 text-blue-800 border-blue-200',
+                'Selesai': 'bg-emerald-100 text-emerald-800 border-emerald-200',
+                'Dibatalkan': 'bg-red-100 text-red-700 border-red-200'
+            };
+            const cls = map[status] || 'bg-slate-100 text-slate-700';
+            return `<span class="inline-block px-2.5 py-0.5 text-[11px] font-semibold rounded-full border ${cls}">${status}</span>`;
+        }
+
+        function renderSalesTable() {
+            const search = document.getElementById('sales-search').value.toLowerCase();
+            const channelFilter = document.getElementById('sales-filter-channel').value;
+            const statusFilter = document.getElementById('sales-filter-status').value;
+
+            const filtered = [...appState.orders].reverse().filter(o => {
+                const matchSearch = o.customer.toLowerCase().includes(search) ||
+                                    o.code.toLowerCase().includes(search) ||
+                                    o.patternName.toLowerCase().includes(search) ||
+                                    (o.notes && o.notes.toLowerCase().includes(search));
+                const matchChannel = channelFilter === 'all' || o.channel === channelFilter;
+                const matchStatus = statusFilter === 'all' || o.status === statusFilter;
+                return matchSearch && matchChannel && matchStatus;
+            });
+
+            const tbody = document.getElementById('sales-table-body');
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="py-10 text-center text-slate-400 text-sm">Tidak ada data penjualan yang sesuai filter.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(o => {
+                const gross = o.qty * o.unitPrice;
+                const net = gross * (1 - (o.feePct / 100));
+                const channelBadge = o.channel === 'Shopee'
+                    ? `<span class="px-2 py-0.5 text-[10px] font-bold rounded bg-shopee-100 text-shopee-600">Shopee</span>`
+                    : `<span class="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-100 text-slate-700">${o.channel}</span>`;
+
+                return `
+                    <tr class="hover:bg-slate-50/80 transition">
+                        <td class="py-3.5 px-4 align-top">
+                            <div class="text-xs font-bold text-slate-900">${o.code}</div>
+                            <div class="text-[11px] text-slate-500 mt-0.5">${o.date}</div>
+                            <div class="mt-1">${channelBadge}</div>
+                        </td>
+                        <td class="py-3.5 px-4 align-top">
+                            <div class="font-semibold text-slate-900 text-sm">${o.customer}</div>
+                            ${o.notes ? `<div class="text-xs text-slate-500 mt-0.5 italic">"${o.notes}"</div>` : ''}
+                        </td>
+                        <td class="py-3.5 px-4 align-top">
+                            <div class="text-xs font-medium text-slate-800">${o.patternName}</div>
+                            <div class="text-[11px] text-slate-500 mt-0.5">@ ${formatRupiah(o.unitPrice)} / pcs</div>
+                        </td>
+                        <td class="py-3.5 px-4 align-top text-right font-bold text-slate-900">
+                            ${formatNumber(o.qty)}
+                        </td>
+                        <td class="py-3.5 px-4 align-top text-right">
+                            <div class="text-xs font-bold text-slate-900">${formatRupiah(gross)}</div>
+                            <div class="text-[11px] font-semibold text-emerald-600">Cair: ${formatRupiah(net)}</div>
+                        </td>
+                        <td class="py-3.5 px-4 align-top text-center">
+                            <select onchange="updateOrderStatus('${o.id}', this.value)" class="text-xs font-semibold rounded-lg px-2 py-1 border border-slate-300 bg-white outline-none focus:ring-2 focus:ring-shopee-500">
+                                <option value="Perlu Desain" ${o.status === 'Perlu Desain' ? 'selected' : ''}>Perlu Desain</option>
+                                <option value="Proses Sablon" ${o.status === 'Proses Sablon' ? 'selected' : ''}>Proses Sablon</option>
+                                <option value="Siap Kirim" ${o.status === 'Siap Kirim' ? 'selected' : ''}>Siap Kirim</option>
+                                <option value="Selesai" ${o.status === 'Selesai' ? 'selected' : ''}>Selesai</option>
+                                <option value="Dibatalkan" ${o.status === 'Dibatalkan' ? 'selected' : ''}>Dibatalkan</option>
+                            </select>
+                        </td>
+                        <td class="py-3.5 px-4 align-top text-center">
+                            <button onclick="deleteOrder('${o.id}')" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition" title="Hapus & Kembalikan Stok">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function exportSalesCSV() {
+            if (appState.orders.length === 0) {
+                showToast('Belum ada data penjualan untuk diexport.', 'warning');
+                return;
+            }
+            const headers = ['Tanggal', 'No_Pesanan', 'Channel', 'Pembeli', 'Pattern_Cup', 'Qty_Pcs', 'Harga_Satuan', 'Omzet_Kotor', 'Potongan_Fee_Pct', 'Estimasi_Cair', 'Status', 'Catatan'];
+            const rows = appState.orders.map(o => {
+                const gross = o.qty * o.unitPrice;
+                const net = Math.round(gross * (1 - (o.feePct / 100)));
+                return [
+                    o.date,
+                    `"${o.code}"`,
+                    o.channel,
+                    `"${o.customer.replace(/"/g, '""')}"`,
+                    `"${o.patternName.replace(/"/g, '""')}"`,
+                    o.qty,
+                    o.unitPrice,
+                    gross,
+                    o.feePct,
+                    net,
+                    o.status,
+                    `"${(o.notes || '').replace(/"/g, '""')}"`
+                ].join(',');
+            });
+
+            const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows].join('\n');
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Laporan_Penjualan_CupSablon_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast('Laporan CSV/Excel berhasil diunduh!');
+        }
+
+
+        // ==========================================
+        // 6. INVENTORY MANAGEMENT (STOK CUP)
+        // ==========================================
+        function openStockModal(id = null) {
+            document.getElementById('stock-form').reset();
+            if (id) {
+                const item = appState.stocks.find(s => s.id === id);
+                if (!item) return;
+                document.getElementById('modal-stock-title').textContent = 'Edit Item Stok';
+                document.getElementById('stk-id').value = item.id;
+                document.getElementById('stk-name').value = item.name;
+                document.getElementById('stk-category').value = item.category;
+                document.getElementById('stk-size').value = item.size || '';
+                document.getElementById('stk-qty').value = item.qty;
+                document.getElementById('stk-min').value = item.minAlert;
+                document.getElementById('stk-hpp').value = item.hpp;
+            } else {
+                document.getElementById('modal-stock-title').textContent = 'Tambah Stok Cup Polos / Bahan';
+                document.getElementById('stk-id').value = '';
+            }
+            openModal('modal-stock');
+        }
+
+        function saveStockItem(e) {
+            e.preventDefault();
+            const id = document.getElementById('stk-id').value;
+            const obj = {
+                id: id || 'stk-' + Date.now(),
+                name: document.getElementById('stk-name').value.trim(),
+                category: document.getElementById('stk-category').value,
+                size: document.getElementById('stk-size').value.trim(),
+                qty: parseInt(document.getElementById('stk-qty').value) || 0,
+                minAlert: parseInt(document.getElementById('stk-min').value) || 0,
+                hpp: parseFloat(document.getElementById('stk-hpp').value) || 0
+            };
+
+            if (id) {
+                const idx = appState.stocks.findIndex(s => s.id === id);
+                if (idx !== -1) appState.stocks[idx] = obj;
+                showToast('Data stok berhasil diperbarui!');
+            } else {
+                appState.stocks.push(obj);
+                showToast('Item stok baru ditambahkan!');
+            }
+
+            closeModal('modal-stock');
+            saveState();
+        }
+
+        function openRestockModal(id) {
+            const item = appState.stocks.find(s => s.id === id);
+            if (!item) return;
+            document.getElementById('restock-id').value = item.id;
+            document.getElementById('restock-item-name').textContent = item.name;
+            document.getElementById('restock-current-qty').textContent = `Stok saat ini: ${formatNumber(item.qty)} pcs (HPP: ${formatRupiah(item.hpp)})`;
+            document.getElementById('restock-add-qty').value = 1000;
+            document.getElementById('restock-new-hpp').value = item.hpp;
+            openModal('modal-restock');
+        }
+
+        function submitRestock(e) {
+            e.preventDefault();
+            const id = document.getElementById('restock-id').value;
+            const addQty = parseInt(document.getElementById('restock-add-qty').value) || 0;
+            const newHpp = parseFloat(document.getElementById('restock-new-hpp').value);
+
+            const item = appState.stocks.find(s => s.id === id);
+            if (!item || addQty <= 0) return;
+
+            item.qty += addQty;
+            if (!isNaN(newHpp) && newHpp >= 0) {
+                item.hpp = newHpp;
+            }
+
+            closeModal('modal-restock');
+            saveState();
+            showToast(`Berhasil menambah +${formatNumber(addQty)} pcs ke ${item.name}!`);
+        }
+
+        function deleteStockItem(id) {
+            appState.stocks = appState.stocks.filter(s => s.id !== id);
+            saveState();
+            showToast('Item stok dihapus.', 'warning');
+        }
+
+        function renderInventoryGrid() {
+            const grid = document.getElementById('inventory-grid');
+            if (appState.stocks.length === 0) {
+                grid.innerHTML = `<div class="col-span-full bg-white p-8 rounded-2xl border border-slate-200 text-center text-slate-400">Belum ada item stok gudang.</div>`;
+                return;
+            }
+
+            grid.innerHTML = appState.stocks.map(s => {
+                const isLow = s.qty <= s.minAlert;
+                const assetValue = s.qty * s.hpp;
+                return `
+                    <div class="bg-white p-5 rounded-2xl border ${isLow ? 'border-red-300 ring-1 ring-red-100' : 'border-slate-200'} shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between gap-2 mb-2">
+                                <span class="px-2.5 py-0.5 text-[11px] font-semibold rounded-full bg-slate-100 text-slate-700">${s.category}</span>
+                                ${isLow
+                                    ? `<span class="px-2.5 py-0.5 text-[11px] font-bold rounded-full bg-red-100 text-red-700 flex items-center gap-1"><i data-lucide="alert-circle" class="w-3 h-3"></i> Stok Menipis</span>`
+                                    : `<span class="px-2.5 py-0.5 text-[11px] font-semibold rounded-full bg-emerald-50 text-emerald-700">Aman</span>`
+                                }
+                            </div>
+                            <h3 class="font-bold text-slate-900 text-base">${s.name}</h3>
+                            <p class="text-xs text-slate-500 mt-0.5">HPP Modal: <strong class="text-slate-800">${formatRupiah(s.hpp)}</strong> / pcs • Nilai Aset: ${formatRupiah(assetValue)}</p>
+                            
+                            <div class="my-4 p-3 rounded-xl ${isLow ? 'bg-red-50' : 'bg-slate-50'} flex items-baseline justify-between">
+                                <span class="text-xs text-slate-500">Sisa Stok Gudang</span>
+                                <span class="text-2xl font-extrabold ${isLow ? 'text-red-600' : 'text-slate-900'}">${formatNumber(s.qty)} <span class="text-xs font-normal text-slate-500">pcs</span></span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                            <button onclick="openRestockModal('${s.id}')" class="flex-grow py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl transition flex items-center justify-center gap-1.5">
+                                <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+                                Restock Masuk
+                            </button>
+                            <button onclick="openStockModal('${s.id}')" class="p-2 text-slate-600 hover:bg-slate-100 rounded-xl border border-slate-200 transition" title="Edit Item">
+                                <i data-lucide="edit-3" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="deleteStockItem('${s.id}')" class="p-2 text-red-500 hover:bg-red-50 rounded-xl border border-slate-200 transition" title="Hapus Item">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+
+        // ==========================================
+        // 7. BACKUP & RESTORE JSON
+        // ==========================================
+        function exportBackupJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState, null, 2));
+            const link = document.createElement('a');
+            link.setAttribute("href", dataStr);
+            link.setAttribute("download", `Backup_CupPrintPro_${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast('File backup JSON berhasil diunduh!');
+        }
+
+        function importBackupJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (parsed.stocks && parsed.patterns && parsed.orders) {
+                        appState = parsed;
+                        saveState();
+                        showToast('Data backup berhasil dipulihkan!');
+                    } else {
+                        showToast('Format file backup tidak valid.', 'error');
+                    }
+                } catch (err) {
+                    showToast('Gagal membaca file JSON.', 'error');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+
+        // ==========================================
+        // 8. INITIALIZATION
+        // ==========================================
+        function refreshAllViews() {
+            renderDashboard();
+            renderSalesTable();
+            populatePatternDropdowns();
+            renderPatternsList();
+            renderInventoryGrid();
+            lucide.createIcons();
+        }
+
+        window.onload = function() {
+            loadState();
+            refreshAllViews();
+            calculatePatternPreview();
+        };
+    </script>
+</body>
+</html>
