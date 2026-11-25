@@ -80,7 +80,7 @@
             <ol class="text-sm text-slate-700 space-y-2 list-decimal list-inside bg-slate-50 p-4 rounded-2xl border border-slate-200">
                 <li>Buka <strong>Firebase Console</strong> &rarr; klik ikon gerigi <strong>Project Settings</strong>.</li>
                 <li>Gulir ke bawah ke bagian <strong>Your apps</strong>, klik ikon Web (<code>&lt;/&gt;</code>) dan salin objek <code>firebaseConfig</code>.</li>
-                <li>Buka file <code>index.html</code> ini di editor teks/GitHub, cari bagian <strong><code>KONFIGURASI FIREBASE</code></strong> di bagian atas script, lalu ganti nilai placeholder dengan konfigurasi milik Anda.</li>
+                <li>Buka file <code>index.html</code> ini di editor teks/GitHub, cari bagian <strong><code>MANUAL_FIREBASE_CONFIG</code></strong> di bagian atas script, lalu ganti nilai placeholder dengan konfigurasi milik Anda.</li>
                 <li>Simpan file dan muat ulang (<em>refresh</em>) halaman ini.</li>
             </ol>
             <div class="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-800">
@@ -768,30 +768,25 @@
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // =========================================================================
-        // 1. KONFIGURASI FIREBASE (TEMPEL MILIK ANDA DI SINI)
+        // 1. KONFIGURASI FIREBASE
         // =========================================================================
-        // Ganti nilai di bawah ini dengan objek firebaseConfig dari Firebase Console:
-        // Project Settings -> Your apps -> SDK setup and configuration
-        const firebaseConfig = {
-            	apiKey: "AIzaSyDMV_H1b3mC2zMdamIHM-UTGqfPWHoBjm0",
-  		authDomain: "sablon-cup-database.firebaseapp.com",
-  		projectId: "sablon-cup-database",
-  		storageBucket: "sablon-cup-database.firebasestorage.app",
-  		messagingSenderId: "109875023706",
-  		appId: "1:109875023706:web:d023d659b8798d95e9ed63""
+        const MANUAL_FIREBASE_CONFIG = {
+            apiKey: "AIzaSyDMV_H1b3mC2zMdamIHM-UTGqfPWHoBjm0",
+            authDomain: "sablon-cup-database.firebaseapp.com",
+            projectId: "sablon-cup-database",
+            storageBucket: "sablon-cup-database.firebasestorage.app",
+            messagingSenderId: "109875023706",
+            appId: "1:109875023706:web:d023d659b8798d95e9ed63"
         };
 
-        // Mendukung environment otomatis jika tersedia, atau memakai MANUAL_FIREBASE_CONFIG
         const isEnvConfigAvailable = typeof __firebase_config !== 'undefined';
         const firebaseConfig = isEnvConfigAvailable ? JSON.parse(__firebase_config) : MANUAL_FIREBASE_CONFIG;
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'cupprint-pro-shared';
 
-        // Cek apakah konfigurasi masih berupa teks placeholder
         const isConfigValid = firebaseConfig &&
             firebaseConfig.apiKey &&
             !firebaseConfig.apiKey.includes("TEMPEL_API_KEY");
 
-        // State in-memory yang selalu diperbarui real-time oleh Firestore onSnapshot
         let appState = {
             stocks: [],
             patterns: [],
@@ -851,7 +846,6 @@
             lucide.createIcons();
         }
 
-        // Helper Path Koleksi Firestore (Mengikuti aturan path terstruktur)
         function getColRef(colName) {
             return collection(db, 'artifacts', appId, 'public', 'data', colName);
         }
@@ -875,7 +869,6 @@
                 auth = getAuth(app);
                 db = getFirestore(app);
 
-                // Jika berjalan di lingkungan sandbox dengan custom token, login otomatis
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
                 }
@@ -951,7 +944,6 @@
             if (!currentUser || !db) return;
             stopRealtimeSync();
 
-            // 1. Listener Koleksi Stocks
             const unsubStocks = onSnapshot(
                 getColRef('stocks'),
                 (snapshot) => {
@@ -965,7 +957,6 @@
                 }
             );
 
-            // 2. Listener Koleksi Patterns
             const unsubPatterns = onSnapshot(
                 getColRef('patterns'),
                 (snapshot) => {
@@ -978,12 +969,10 @@
                 }
             );
 
-            // 3. Listener Koleksi Orders
             const unsubOrders = onSnapshot(
                 getColRef('orders'),
                 (snapshot) => {
                     appState.orders = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-                    // Urutkan terbaru berdasarkan createdAt atau tanggal
                     appState.orders.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
                     refreshAllViews();
                 },
@@ -995,7 +984,6 @@
             unsubscribeListeners.push(unsubStocks, unsubPatterns, unsubOrders);
         }
 
-        // Isi Data Contoh ke Cloud Firestore (Hanya jika user menekan tombol)
         window.seedInitialCloudData = async function() {
             if (!currentUser) return;
             try {
@@ -1559,14 +1547,12 @@
             try {
                 const batch = writeBatch(db);
 
-                // 1. Potong stok cup polos secara atomik di Firestore
                 if (stock) {
                     batch.update(getDocRef('stocks', stock.id), {
                         qty: increment(-qty)
                     });
                 }
 
-                // 2. Potong stok lid jika pattern menyertakan lid
                 if (pat.lidId) {
                     const lidStock = appState.stocks.find(s => s.id === pat.lidId);
                     if (lidStock) {
@@ -1576,7 +1562,6 @@
                     }
                 }
 
-                // 3. Simpan dokumen pesanan baru
                 const newOrderRef = doc(getColRef('orders'));
                 batch.set(newOrderRef, {
                     date: document.getElementById('ord-date').value,
@@ -1620,7 +1605,6 @@
                 const batch = writeBatch(db);
                 batch.update(getDocRef('orders', orderId), { status: newStatus });
 
-                // Kembalikan stok jika dibatalkan
                 if (newStatus === 'Dibatalkan' && oldStatus !== 'Dibatalkan') {
                     if (order.stockId && appState.stocks.some(s => s.id === order.stockId)) {
                         batch.update(getDocRef('stocks', order.stockId), { qty: increment(order.qty) });
@@ -1630,7 +1614,6 @@
                     }
                     showToast(`Pesanan dibatalkan. Stok ${formatNumber(order.qty)} pcs dikembalikan ke gudang.`, 'warning');
                 } else if (oldStatus === 'Dibatalkan' && newStatus !== 'Dibatalkan') {
-                    // Potong kembali jika diaktifkan lagi
                     if (order.stockId && appState.stocks.some(s => s.id === order.stockId)) {
                         batch.update(getDocRef('stocks', order.stockId), { qty: increment(-order.qty) });
                     }
