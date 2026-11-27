@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CupPrint Pro — Cloud Sync Stok & Pattern Harga Shopee</title>
+    <title>CupPrint Pro — Cloud Sync Stok, Penjualan & Keuangan</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts: Inter -->
@@ -75,17 +75,8 @@
                 </div>
             </div>
             <p class="text-sm text-slate-600 leading-relaxed">
-                Aplikasi ini sudah siap terhubung secara <strong>real-time multi-device</strong> ke Cloud Firestore & Login Admin. Anda hanya perlu menempelkan kode <code>firebaseConfig</code> dari Firebase Console ke dalam file <code>index.html</code> ini:
+                Aplikasi ini sudah siap terhubung secara <strong>real-time multi-device</strong> ke Cloud Firestore & Login Admin. Pastikan konfigurasi Firebase sudah benar dan fitur <em>Authentication (Email/Password)</em> serta <em>Firestore Database</em> sudah aktif.
             </p>
-            <ol class="text-sm text-slate-700 space-y-2 list-decimal list-inside bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                <li>Buka <strong>Firebase Console</strong> &rarr; klik ikon gerigi <strong>Project Settings</strong>.</li>
-                <li>Gulir ke bawah ke bagian <strong>Your apps</strong>, klik ikon Web (<code>&lt;/&gt;</code>) dan salin objek <code>firebaseConfig</code>.</li>
-                <li>Buka file <code>index.html</code> ini di editor teks/GitHub, cari bagian <strong><code>MANUAL_FIREBASE_CONFIG</code></strong> di bagian atas script, lalu ganti nilai placeholder dengan konfigurasi milik Anda.</li>
-                <li>Simpan file dan muat ulang (<em>refresh</em>) halaman ini.</li>
-            </ol>
-            <div class="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-800">
-                <strong>Tips:</strong> Pastikan fitur <em>Authentication (Email/Password)</em> dan <em>Firestore Database</em> sudah diaktifkan di proyek Firebase Anda.
-            </div>
         </div>
     </div>
 
@@ -99,7 +90,7 @@
                     <i data-lucide="cup-soda" class="w-8 h-8"></i>
                 </div>
                 <h1 class="text-2xl font-extrabold text-slate-900">CupPrint <span class="text-shopee-500">Cloud</span></h1>
-                <p class="text-xs text-slate-500">Login Admin — Sinkronisasi Real-Time Stok & Harga Shopee</p>
+                <p class="text-xs text-slate-500">Login Admin — Sinkronisasi Real-Time Stok, Penjualan & Keuangan</p>
             </div>
 
             <form id="login-form" onsubmit="handleAdminLogin(event)" class="space-y-4">
@@ -150,7 +141,7 @@
                             <h1 class="text-lg font-bold text-slate-900 leading-tight flex items-center gap-2">
                                 CupPrint <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Cloud Live</span>
                             </h1>
-                            <p class="text-xs text-slate-500 hidden sm:block">Stok Real-Time, Pattern Shopee & Produksi Sablon</p>
+                            <p class="text-xs text-slate-500 hidden sm:block">Stok HPP Avg, Penjualan & Keuangan Real-Time</p>
                         </div>
                     </div>
 
@@ -168,7 +159,7 @@
                 </div>
 
                 <!-- Navigation Tabs -->
-                <nav class="flex space-x-6 overflow-x-auto no-scrollbar border-t border-slate-100 pt-1">
+                <nav class="flex space-x-5 sm:space-x-6 overflow-x-auto no-scrollbar border-t border-slate-100 pt-1">
                     <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn tab-active flex items-center gap-2 py-3 px-1 text-sm whitespace-nowrap transition">
                         <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
                         Dashboard
@@ -177,6 +168,10 @@
                         <i data-lucide="shopping-bag" class="w-4 h-4"></i>
                         Penjualan & Produksi
                         <span id="badge-active-orders" class="ml-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-amber-100 text-amber-800">0</span>
+                    </button>
+                    <button onclick="switchTab('finance')" id="tab-finance" class="tab-btn flex items-center gap-2 py-3 px-1 text-sm text-slate-600 hover:text-slate-900 whitespace-nowrap transition">
+                        <i data-lucide="landmark" class="w-4 h-4"></i>
+                        Keuangan & Pengeluaran
                     </button>
                     <button onclick="switchTab('patterns')" id="tab-patterns" class="tab-btn flex items-center gap-2 py-3 px-1 text-sm text-slate-600 hover:text-slate-900 whitespace-nowrap transition">
                         <i data-lucide="tags" class="w-4 h-4"></i>
@@ -201,7 +196,7 @@
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
                     <div>
                         <h2 class="text-lg font-bold text-slate-900">Ringkasan Performa Usaha (Real-Time)</h2>
-                        <p class="text-xs text-slate-500">Semua perubahan stok & order otomatis tersinkron ke seluruh perangkat admin.</p>
+                        <p class="text-xs text-slate-500">Omzet, pengeluaran operasional, HPP Average & antrean sablon tersinkron lintas perangkat.</p>
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
                         <select id="dashboard-period" onchange="renderDashboard()" class="text-sm border border-slate-300 rounded-xl px-3 py-2 bg-slate-50 focus:ring-2 focus:ring-shopee-500 outline-none">
@@ -226,18 +221,18 @@
                             </div>
                         </div>
                         <div id="kpi-gross-revenue" class="text-2xl font-extrabold text-slate-900">Rp 0</div>
-                        <p class="text-xs text-slate-500 mt-1">Total nilai transaksi pembeli</p>
+                        <p id="kpi-net-payout-sub" class="text-xs text-emerald-600 font-medium mt-1">Uang Cair: Rp 0</p>
                     </div>
 
                     <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                         <div class="flex items-center justify-between mb-3">
-                            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Estimasi Cair (Bersih)</span>
-                            <div class="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
-                                <i data-lucide="badge-dollar-sign" class="w-5 h-5"></i>
+                            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Pengeluaran</span>
+                            <div class="p-2 bg-rose-50 text-rose-600 rounded-xl">
+                                <i data-lucide="arrow-up-right" class="w-5 h-5"></i>
                             </div>
                         </div>
-                        <div id="kpi-net-payout" class="text-2xl font-extrabold text-emerald-600">Rp 0</div>
-                        <p id="kpi-net-profit-info" class="text-xs text-slate-500 mt-1">Est. Profit Bersih: Rp 0</p>
+                        <div id="kpi-total-expenses" class="text-2xl font-extrabold text-rose-600">Rp 0</div>
+                        <p id="kpi-net-cashflow-info" class="text-xs text-slate-500 mt-1">Arus Kas Bersih: Rp 0</p>
                     </div>
 
                     <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
@@ -288,8 +283,8 @@
                             <table class="w-full text-left border-collapse">
                                 <thead>
                                     <tr class="border-b border-slate-100 text-xs text-slate-500 bg-slate-50">
-                                        <th class="py-2.5 px-4 font-semibold">Pembeli / Channel</th>
-                                        <th class="py-2.5 px-4 font-semibold">Pattern Cup</th>
+                                        <th class="py-2.5 px-4 font-semibold">Invoice / Pembeli</th>
+                                        <th class="py-2.5 px-4 font-semibold">Item / Pattern</th>
                                         <th class="py-2.5 px-4 font-semibold text-right">Qty</th>
                                         <th class="py-2.5 px-4 font-semibold text-right">Total</th>
                                         <th class="py-2.5 px-4 font-semibold text-center">Status</th>
@@ -310,7 +305,7 @@
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
                     <div>
                         <h2 class="text-lg font-bold text-slate-900">Pencatatan Penjualan & Antrean Sablon</h2>
-                        <p class="text-xs text-slate-500">Pesanan baru akan memotong stok gudang di Cloud secara otomatis dan sinkron ke semua admin.</p>
+                        <p class="text-xs text-slate-500">Order Offline & WhatsApp otomatis mendapat No. Pesanan & Invoice tahunan; stok gudang terpotong otomatis.</p>
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
                         <button onclick="exportSalesCSV()" class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-sm font-semibold rounded-xl transition">
@@ -328,15 +323,15 @@
                 <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-3">
                     <div class="relative flex-grow">
                         <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3"></i>
-                        <input type="text" id="sales-search" oninput="renderSalesTable()" placeholder="Cari No. Pesanan Shopee, Nama Toko/Pembeli, atau Catatan Sablon..." class="w-full pl-10 pr-4 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-shopee-500 outline-none">
+                        <input type="text" id="sales-search" oninput="renderSalesTable()" placeholder="Cari No. Invoice / Pesanan, Nama Pembeli/Brand, atau Catatan Sablon..." class="w-full pl-10 pr-4 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-shopee-500 outline-none">
                     </div>
                     <select id="sales-filter-channel" onchange="renderSalesTable()" class="text-sm border border-slate-300 rounded-xl px-3 py-2 bg-white outline-none">
                         <option value="all">Semua Channel</option>
                         <option value="Shopee">Shopee</option>
-                        <option value="Lazada">Lazada</option>
                         <option value="WhatsApp">WhatsApp / Direct</option>
-                        <option value="Tokopedia">Tokopedia / TikTok</option>
                         <option value="Offline">Offline / Toko</option>
+                        <option value="Lazada">Lazada</option>
+                        <option value="Tokopedia">Tokopedia / TikTok</option>
                     </select>
                     <select id="sales-filter-status" onchange="renderSalesTable()" class="text-sm border border-slate-300 rounded-xl px-3 py-2 bg-white outline-none">
                         <option value="all">Semua Status</option>
@@ -354,9 +349,9 @@
                         <table class="w-full text-left border-collapse">
                             <thead>
                                 <tr class="border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-500 bg-slate-50">
-                                    <th class="py-3.5 px-4">Tanggal & Order ID</th>
+                                    <th class="py-3.5 px-4">Tanggal & No. Invoice</th>
                                     <th class="py-3.5 px-4">Pembeli / Brand</th>
-                                    <th class="py-3.5 px-4">Pattern & Spesifikasi</th>
+                                    <th class="py-3.5 px-4">Item / Pattern & Spec</th>
                                     <th class="py-3.5 px-4 text-right">Qty (pcs)</th>
                                     <th class="py-3.5 px-4 text-right">Omzet & Cair</th>
                                     <th class="py-3.5 px-4 text-center">Status Produksi</th>
@@ -371,7 +366,155 @@
 
 
             <!-- ========================================== -->
-            <!-- 3. TAB PATTERN HARGA SHOPEE & KALKULATOR   -->
+            <!-- 3. TAB KEUANGAN, PENGELUARAN & LABA RUGI   -->
+            <!-- ========================================== -->
+            <section id="view-finance" class="hidden space-y-6">
+                <!-- Header & Filter Periode -->
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900">Laporan Keuangan & Pengeluaran Operasional</h2>
+                        <p class="text-xs text-slate-500">Catat pembelian alat/bahan, bahan baku, pemeliharaan, transportasi, hingga hitung Laba Rugi otomatis.</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <select id="finance-period" onchange="renderFinanceView()" class="text-sm border border-slate-300 rounded-xl px-3 py-2 bg-slate-50 focus:ring-2 focus:ring-shopee-500 outline-none">
+                            <option value="month" selected>Bulan Ini</option>
+                            <option value="year">Tahun Ini</option>
+                            <option value="today">Hari Ini</option>
+                            <option value="all">Semua Waktu</option>
+                        </select>
+                        <button onclick="exportFinanceCSV()" class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-sm font-semibold rounded-xl transition">
+                            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                            Export Keuangan (CSV)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- P&L Summary Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Pemasukan Bersih (Cair)</span>
+                        <div id="fin-income-net" class="text-2xl font-extrabold text-emerald-600 mt-2">Rp 0</div>
+                        <p id="fin-income-gross" class="text-xs text-slate-500 mt-1">Omzet Kotor: Rp 0</p>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Pengeluaran</span>
+                        <div id="fin-expense-total" class="text-2xl font-extrabold text-rose-600 mt-2">Rp 0</div>
+                        <p id="fin-expense-count" class="text-xs text-slate-500 mt-1">Dari 0 catatan pengeluaran</p>
+                    </div>
+
+                    <div class="bg-slate-900 text-white p-5 rounded-2xl shadow-sm">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Laba / Rugi Bersih (Cashflow)</span>
+                        <div id="fin-net-profit" class="text-2xl font-extrabold text-emerald-400 mt-2">Rp 0</div>
+                        <p id="fin-margin-pct" class="text-xs text-slate-400 mt-1">Margin Kas: 0%</p>
+                    </div>
+                </div>
+
+                <!-- Grid Form Input Pengeluaran & Ringkasan Kategori -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <!-- Form Input Pengeluaran -->
+                    <div class="lg:col-span-5 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4 h-fit">
+                        <div class="border-b border-slate-100 pb-3">
+                            <span class="text-xs font-bold uppercase tracking-wider text-rose-600">Catat Kas Keluar</span>
+                            <h3 class="text-lg font-bold text-slate-900">Input Pengeluaran Usaha</h3>
+                        </div>
+
+                        <form id="expense-form" onsubmit="saveExpenseItem(event)" class="space-y-3.5">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Tanggal *</label>
+                                    <input type="date" id="exp-date" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-shopee-500">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Metode Pembayaran</label>
+                                    <select id="exp-method" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl bg-white outline-none">
+                                        <option value="Transfer Bank">Transfer Bank</option>
+                                        <option value="Tunai / Cash">Tunai / Cash</option>
+                                        <option value="Saldo Shopee">Saldo Shopee</option>
+                                        <option value="QRIS / E-Wallet">QRIS / E-Wallet</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Kategori Pengeluaran *</label>
+                                <select id="exp-category" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl bg-white outline-none focus:ring-2 focus:ring-shopee-500">
+                                    <option value="Bahan Baku Cup & Lid">Bahan Baku Cup & Lid</option>
+                                    <option value="Pembelian Alat & Bahan Sablon">Pembelian Alat & Bahan Sablon (Tinta/Film/Screen)</option>
+                                    <option value="Biaya Pemeliharaan">Biaya Pemeliharaan & Servis (Alat/Listrik)</option>
+                                    <option value="Biaya Transportasi">Biaya Transportasi & Ongkir Ekspedisi</option>
+                                    <option value="Gaji & Upah">Gaji & Upah Tenaga Kerja</option>
+                                    <option value="Biaya Lain-lain">Biaya Lain-lain</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Keterangan / Rincian *</label>
+                                <input type="text" id="exp-desc" required placeholder="Contoh: Beli tinta rubber hitam 1kg & bensin antar paket" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-shopee-500">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Nominal Pengeluaran (Rp) *</label>
+                                <input type="number" id="exp-amount" required min="1" placeholder="Contoh: 125000" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-shopee-500">
+                            </div>
+
+                            <button type="submit" id="btn-submit-expense" class="w-full py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold rounded-xl shadow-sm transition flex items-center justify-center gap-2">
+                                <i data-lucide="minus-circle" class="w-4 h-4"></i>
+                                <span>Simpan Pengeluaran ke Cloud</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Rincian Per Kategori -->
+                    <div class="lg:col-span-7 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                        <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-900">Rekap Pengeluaran per Kategori</h3>
+                                <p class="text-xs text-slate-500">Komposisi biaya operasional pada periode yang dipilih.</p>
+                            </div>
+                        </div>
+                        <div id="finance-category-breakdown" class="space-y-3"></div>
+                    </div>
+                </div>
+
+                <!-- Tabel Riwayat Pengeluaran -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50">
+                        <h3 class="font-bold text-slate-900 text-sm">Riwayat Pengeluaran & Belanja</h3>
+                        <div class="flex flex-wrap gap-2">
+                            <input type="text" id="expense-search" oninput="renderExpensesTable()" placeholder="Cari keterangan..." class="text-xs border border-slate-300 rounded-xl px-3 py-1.5 bg-white outline-none">
+                            <select id="expense-filter-cat" onchange="renderExpensesTable()" class="text-xs border border-slate-300 rounded-xl px-3 py-1.5 bg-white outline-none">
+                                <option value="all">Semua Kategori</option>
+                                <option value="Bahan Baku Cup & Lid">Bahan Baku Cup & Lid</option>
+                                <option value="Pembelian Alat & Bahan Sablon">Pembelian Alat & Bahan Sablon</option>
+                                <option value="Biaya Pemeliharaan">Biaya Pemeliharaan</option>
+                                <option value="Biaya Transportasi">Biaya Transportasi</option>
+                                <option value="Gaji & Upah">Gaji & Upah</option>
+                                <option value="Biaya Lain-lain">Biaya Lain-lain</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-500 bg-slate-50">
+                                    <th class="py-3 px-4">Tanggal</th>
+                                    <th class="py-3 px-4">Kategori</th>
+                                    <th class="py-3 px-4">Keterangan</th>
+                                    <th class="py-3 px-4">Metode</th>
+                                    <th class="py-3 px-4 text-right">Nominal</th>
+                                    <th class="py-3 px-4 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="expenses-table-body" class="divide-y divide-slate-100 text-sm"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- ========================================== -->
+            <!-- 4. TAB PATTERN HARGA SHOPEE & KALKULATOR   -->
             <!-- ========================================== -->
             <section id="view-patterns" class="hidden space-y-6">
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -380,7 +523,7 @@
                         <div class="border-b border-slate-100 pb-3">
                             <span class="text-xs font-bold uppercase tracking-wider text-shopee-500">Shopee Pricing Engine</span>
                             <h2 class="text-lg font-bold text-slate-900">Buat Pattern Variasi & Harga</h2>
-                            <p class="text-xs text-slate-500">Hitung otomatis harga jual grosir agar aman dari potongan admin & layanan Shopee.</p>
+                            <p class="text-xs text-slate-500">Menggunakan <strong>HPP Average</strong> stok terbaru agar margin tetap aman dari potongan Shopee.</p>
                         </div>
 
                         <form id="pattern-form" onsubmit="savePattern(event)" class="space-y-3.5">
@@ -425,7 +568,7 @@
                             <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5">
                                 <p class="text-xs font-bold text-slate-700 flex items-center justify-between">
                                     <span>Komponen Modal & Margin (per pcs)</span>
-                                    <span id="preview-cup-hpp" class="text-slate-500 font-normal">HPP Cup: Rp 0</span>
+                                    <span id="preview-cup-hpp" class="text-slate-600 font-semibold">HPP Avg: Rp 0</span>
                                 </p>
                                 <div class="grid grid-cols-3 gap-2">
                                     <div>
@@ -519,13 +662,13 @@
 
 
             <!-- ========================================== -->
-            <!-- 4. TAB MANAJEMEN STOK CUP POLOS & BAHAN    -->
+            <!-- 5. TAB MANAJEMEN STOK CUP POLOS & BAHAN    -->
             <!-- ========================================== -->
             <section id="view-inventory" class="hidden space-y-6">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
                     <div>
                         <h2 class="text-lg font-bold text-slate-900">Stok Bahan Baku Cup Polos & Tutup (Lid)</h2>
-                        <p class="text-xs text-slate-500">Stok terhubung ke Cloud Firestore dan otomatis berkurang saat order tercatat.</p>
+                        <p class="text-xs text-slate-500">Restock otomatis menghitung <strong>HPP Average</strong> dari stok lama + stok baru yang masuk.</p>
                     </div>
                     <button onclick="openStockModal()" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold rounded-xl shadow-sm transition">
                         <i data-lucide="plus" class="w-4 h-4"></i>
@@ -570,24 +713,25 @@
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-semibold text-slate-700 mb-1">Tanggal Pesanan *</label>
-                        <input type="date" id="ord-date" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-shopee-500">
+                        <input type="date" id="ord-date" required onchange="handleOrderDateOrChannelChange()" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-shopee-500">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-700 mb-1">Channel Penjualan *</label>
-                        <select id="ord-channel" onchange="onOrderPatternChange()" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl bg-white outline-none focus:ring-2 focus:ring-shopee-500">
+                        <select id="ord-channel" onchange="handleOrderDateOrChannelChange()" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl bg-white outline-none focus:ring-2 focus:ring-shopee-500">
                             <option value="Shopee">Shopee</option>
-                            <option value="Lazada">Lazada</option>
                             <option value="WhatsApp">WhatsApp / Direct</option>
-                            <option value="Tokopedia">Tokopedia / TikTok</option>
                             <option value="Offline">Offline / Toko</option>
+                            <option value="Lazada">Lazada</option>
+                            <option value="Tokopedia">Tokopedia / TikTok</option>
                         </select>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">No. Pesanan / Invoice</label>
-                        <input type="text" id="ord-code" placeholder="Contoh: 261125ABCD12" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-shopee-500">
+                        <label id="ord-code-label" class="block text-xs font-semibold text-slate-700 mb-1">No. Pesanan / Invoice</label>
+                        <input type="text" id="ord-code" placeholder="Contoh: 261127ABCD12" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-shopee-500">
+                        <p id="ord-auto-inv-hint" class="hidden text-[11px] text-emerald-700 font-medium mt-1">Otomatis terisi saat disimpan (berurutan per tahun).</p>
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Pembeli / Brand Cafe *</label>
@@ -595,10 +739,21 @@
                     </div>
                 </div>
 
-                <div>
+                <!-- Pilihan Pattern (Untuk Shopee / Marketplace) -->
+                <div id="ord-pattern-wrapper">
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Pilih Pattern Cup & Sablon *</label>
-                    <select id="ord-pattern-id" required onchange="onOrderPatternChange()" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl bg-white outline-none focus:ring-2 focus:ring-shopee-500"></select>
+                    <select id="ord-pattern-id" onchange="onOrderPatternChange()" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl bg-white outline-none focus:ring-2 focus:ring-shopee-500"></select>
                     <p id="ord-stock-availability" class="text-xs mt-1 text-slate-500">Sisa stok cup polos: -</p>
+                </div>
+
+                <!-- Pilihan Stok Langsung (Untuk Offline / WhatsApp tanpa Pattern Shopee) -->
+                <div id="ord-direct-stock-wrapper" class="hidden space-y-2 p-3 rounded-xl bg-amber-50/70 border border-amber-200">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-bold text-amber-900">Item Cup / Bahan dari Gudang (Tanpa Pattern Shopee)</label>
+                        <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-200/70 text-amber-900">Mode Offline / WA</span>
+                    </div>
+                    <select id="ord-direct-stock-id" onchange="onDirectStockChange()" class="w-full px-3 py-2 text-sm border border-amber-300 rounded-xl bg-white outline-none focus:ring-2 focus:ring-shopee-500"></select>
+                    <p id="ord-direct-stock-info" class="text-xs text-amber-800">Pilih item stok untuk memotong stok otomatis.</p>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
@@ -711,33 +866,61 @@
 
 
     <!-- ========================================== -->
-    <!-- MODAL 3: RESTOCK CEPAT (TAMBAH STOK MASUK) -->
+    <!-- MODAL 3: RESTOCK CEPAT (HPP AVERAGE AUTO) -->
     <!-- ========================================== -->
     <div id="modal-restock" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-sm w-full shadow-2xl border border-slate-200 overflow-hidden">
+        <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden">
             <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-                <h3 class="font-bold text-slate-900">Restock Barang Masuk</h3>
+                <h3 class="font-bold text-slate-900 flex items-center gap-2">
+                    <i data-lucide="calculator" class="w-4 h-4 text-emerald-600"></i>
+                    Restock & Hitung HPP Average
+                </h3>
                 <button onclick="closeModal('modal-restock')" class="p-1 text-slate-400 hover:text-slate-600 rounded-lg">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
             <form onsubmit="submitRestock(event)" class="p-5 space-y-4">
                 <input type="hidden" id="restock-id">
-                <div>
-                    <p id="restock-item-name" class="text-sm font-bold text-slate-800"></p>
-                    <p id="restock-current-qty" class="text-xs text-slate-500"></p>
+                <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                    <p id="restock-item-name" class="text-sm font-bold text-slate-900"></p>
+                    <p id="restock-current-qty" class="text-xs text-slate-600 mt-0.5"></p>
                 </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Jumlah Stok Masuk (pcs) *</label>
-                    <input type="number" id="restock-add-qty" required min="1" value="1000" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500">
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Jumlah Stok Masuk (pcs) *</label>
+                        <input type="number" id="restock-add-qty" required min="1" value="1000" oninput="calculateRestockAvgPreview()" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Harga Beli Baru / pcs (Rp) *</label>
+                        <input type="number" id="restock-new-hpp" required min="0" oninput="calculateRestockAvgPreview()" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Update HPP / pcs (Opsional)</label>
-                    <input type="number" id="restock-new-hpp" min="0" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl outline-none">
+
+                <!-- Pratinjau HPP Average -->
+                <div class="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 space-y-1.5">
+                    <div class="flex justify-between text-xs text-emerald-900">
+                        <span>Total Stok Setelah Restock:</span>
+                        <span id="restock-preview-total-qty" class="font-bold">0 pcs</span>
+                    </div>
+                    <div class="flex justify-between text-xs text-emerald-900">
+                        <span>Nilai Belanja Restock Ini:</span>
+                        <span id="restock-preview-purchase-cost" class="font-bold">Rp 0</span>
+                    </div>
+                    <div class="border-t border-emerald-200 pt-1.5 flex justify-between items-baseline">
+                        <span class="text-xs font-bold text-emerald-950">HPP Average Baru:</span>
+                        <span id="restock-preview-new-avg" class="text-base font-extrabold text-emerald-700">Rp 0 / pcs</span>
+                    </div>
                 </div>
+
+                <label class="flex items-center gap-2 text-xs text-slate-700 cursor-pointer select-none">
+                    <input type="checkbox" id="restock-record-expense" checked class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                    <span>Catat otomatis nilai belanja ke <strong>Keuangan & Pengeluaran</strong> (Bahan Baku Cup & Lid)</span>
+                </label>
+
                 <div class="flex justify-end gap-2 pt-2">
                     <button type="button" onclick="closeModal('modal-restock')" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl">Batal</button>
-                    <button type="submit" class="px-4 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl">Tambah Stok</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm">Simpan Restock & HPP Avg</button>
                 </div>
             </form>
         </div>
@@ -759,6 +942,7 @@
             onSnapshot,
             collection,
             writeBatch,
+            runTransaction,
             increment
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
@@ -785,7 +969,8 @@
         let appState = {
             stocks: [],
             patterns: [],
-            orders: []
+            orders: [],
+            expenses: []
         };
 
         let db = null;
@@ -824,7 +1009,7 @@
             setTimeout(() => {
                 toast.classList.add('opacity-0', 'translate-y-2');
                 setTimeout(() => toast.remove(), 300);
-            }, 3400);
+            }, 3500);
         }
 
         function showScreen(screenId) {
@@ -847,6 +1032,10 @@
 
         function getDocRef(colName, docId) {
             return doc(db, 'artifacts', appId, 'public', 'data', colName, docId);
+        }
+
+        function isOfflineOrWhatsApp(channel) {
+            return channel === 'Offline' || channel === 'WhatsApp';
         }
 
 
@@ -976,7 +1165,19 @@
                 }
             );
 
-            unsubscribeListeners.push(unsubStocks, unsubPatterns, unsubOrders);
+            const unsubExpenses = onSnapshot(
+                getColRef('expenses'),
+                (snapshot) => {
+                    appState.expenses = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                    appState.expenses.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                    refreshAllViews();
+                },
+                (error) => {
+                    console.error("Firestore expenses error:", error);
+                }
+            );
+
+            unsubscribeListeners.push(unsubStocks, unsubPatterns, unsubOrders, unsubExpenses);
         }
 
 
@@ -984,7 +1185,7 @@
         // 5. NAVIGATION & MODAL CONTROLS
         // =========================================================================
         window.switchTab = function(tabName) {
-            const tabs = ['dashboard', 'sales', 'patterns', 'inventory'];
+            const tabs = ['dashboard', 'sales', 'finance', 'patterns', 'inventory'];
             tabs.forEach(t => {
                 document.getElementById(`view-${t}`).classList.add('hidden');
                 const btn = document.getElementById(`tab-${t}`);
@@ -1000,6 +1201,8 @@
             if (tabName === 'patterns') {
                 populatePatternDropdowns();
                 calculatePatternPreview();
+            } else if (tabName === 'finance') {
+                renderFinanceView();
             }
             lucide.createIcons();
         };
@@ -1030,24 +1233,26 @@
                 return true;
             });
 
+            const filteredExpenses = appState.expenses.filter(e => {
+                if (period === 'today') return e.date === todayStr;
+                if (period === 'month') return (e.date || '').startsWith(currentMonthPrefix);
+                return true;
+            });
+
             let grossRevenue = 0;
             let netPayout = 0;
-            let totalHpp = 0;
             let totalCups = 0;
 
             validOrders.forEach(o => {
                 const gross = o.qty * o.unitPrice;
                 const feeAmount = gross * ((o.feePct || 0) / 100);
-                const payout = gross - feeAmount;
-                const cost = o.qty * (o.hppPerPcs || 0);
-
                 grossRevenue += gross;
-                netPayout += payout;
-                totalHpp += cost;
+                netPayout += (gross - feeAmount);
                 totalCups += o.qty;
             });
 
-            const netProfit = netPayout - totalHpp;
+            const totalExpenses = filteredExpenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+            const netCashflow = netPayout - totalExpenses;
 
             const activeProduction = appState.orders.filter(o =>
                 ['Perlu Desain', 'Proses Sablon', 'Siap Kirim'].includes(o.status)
@@ -1055,8 +1260,9 @@
             const activeCups = activeProduction.reduce((acc, o) => acc + o.qty, 0);
 
             document.getElementById('kpi-gross-revenue').textContent = formatRupiah(grossRevenue);
-            document.getElementById('kpi-net-payout').textContent = formatRupiah(netPayout);
-            document.getElementById('kpi-net-profit-info').textContent = `Est. Profit Bersih: ${formatRupiah(netProfit)}`;
+            document.getElementById('kpi-net-payout-sub').textContent = `Est. Cair: ${formatRupiah(netPayout)}`;
+            document.getElementById('kpi-total-expenses').textContent = formatRupiah(totalExpenses);
+            document.getElementById('kpi-net-cashflow-info').textContent = `Arus Kas Bersih: ${formatRupiah(netCashflow)}`;
             document.getElementById('kpi-cups-sold').innerHTML = `${formatNumber(totalCups)} <span class="text-sm font-normal text-slate-500">pcs</span>`;
             document.getElementById('kpi-order-count').textContent = `Dari ${validOrders.length} pesanan valid`;
             document.getElementById('kpi-pending-production').innerHTML = `${activeProduction.length} <span class="text-sm font-normal text-slate-500">order</span>`;
@@ -1087,7 +1293,7 @@
                     <div class="p-3 rounded-xl bg-red-50/70 border border-red-200 flex items-center justify-between gap-2">
                         <div>
                             <p class="text-xs font-bold text-slate-900">${s.name}</p>
-                            <p class="text-[11px] text-red-700">Sisa: <strong>${formatNumber(s.qty)} pcs</strong> (Min: ${formatNumber(s.minAlert)})</p>
+                            <p class="text-[11px] text-red-700">Sisa: <strong>${formatNumber(s.qty)} pcs</strong> • HPP Avg: ${formatRupiah(s.hpp)}</p>
                         </div>
                         <button onclick="openRestockModal('${s.id}')" class="px-2.5 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-lg shrink-0 transition">
                             + Restock
@@ -1104,8 +1310,8 @@
                 recentBody.innerHTML = recentList.map(o => `
                     <tr class="hover:bg-slate-50">
                         <td class="py-3 px-4">
-                            <div class="font-semibold text-slate-900 text-xs">${o.customer}</div>
-                            <div class="text-[11px] text-slate-500">${o.channel} • ${o.date}</div>
+                            <div class="font-semibold text-slate-900 text-xs">${o.code}</div>
+                            <div class="text-[11px] text-slate-500">${o.customer} • ${o.channel}</div>
                         </td>
                         <td class="py-3 px-4 text-xs text-slate-700">${o.patternName}</td>
                         <td class="py-3 px-4 text-right font-semibold text-xs">${formatNumber(o.qty)}</td>
@@ -1131,7 +1337,7 @@
             const lids = appState.stocks.filter(s => s.category === 'Lid / Tutup');
 
             stockSelect.innerHTML = cups.length > 0
-                ? cups.map(c => `<option value="${c.id}">${c.name} (HPP: ${formatRupiah(c.hpp)})</option>`).join('')
+                ? cups.map(c => `<option value="${c.id}">${c.name} (HPP Avg: ${formatRupiah(c.hpp)})</option>`).join('')
                 : `<option value="">-- Tambahkan Stok Cup Polos Dulu --</option>`;
 
             lidSelect.innerHTML = `<option value="">Tanpa Tutup (Cup Saja)</option>` +
@@ -1156,10 +1362,10 @@
             const stockItem = appState.stocks.find(s => s.id === stockId);
             const lidItem = appState.stocks.find(s => s.id === lidId);
 
-            const cupHpp = stockItem ? stockItem.hpp : 0;
-            const lidHpp = lidItem ? lidItem.hpp : 0;
+            const cupHpp = stockItem ? (parseFloat(stockItem.hpp) || 0) : 0;
+            const lidHpp = lidItem ? (parseFloat(lidItem.hpp) || 0) : 0;
 
-            document.getElementById('preview-cup-hpp').textContent = `HPP Cup${lidItem ? '+Lid' : ''}: ${formatRupiah(cupHpp + lidHpp)}`;
+            document.getElementById('preview-cup-hpp').textContent = `HPP Avg: ${formatRupiah(cupHpp + lidHpp)}`;
 
             const totalHppPerPcs = cupHpp + lidHpp + printCost + packCost;
             const targetNetRevenue = totalHppPerPcs + margin;
@@ -1269,7 +1475,7 @@
         function renderPatternsList() {
             const container = document.getElementById('patterns-list-container');
             if (appState.patterns.length === 0) {
-                container.innerHTML = `<div class="bg-white p-8 rounded-2xl border border-slate-200 text-center text-slate-400 text-sm">Belum ada pattern harga di Cloud. Buat pattern pertama di samping kiri!</div>`;
+                container.innerHTML = `<div class="bg-white p-8 rounded-2xl border border-slate-200 text-center text-slate-400 text-sm">Belum ada pattern harga di Cloud. Buat pattern pertama di samping kiri (khusus Shopee/Marketplace).</div>`;
                 return;
             }
 
@@ -1278,6 +1484,7 @@
                 const lid = appState.stocks.find(s => s.id === p.lidId);
                 const totalFee = (p.feeAdmin + p.feeOngkir + p.feePromo).toFixed(1);
                 const packPrice = p.unitPrice * p.minQty;
+                const liveHpp = (stock ? (parseFloat(stock.hpp) || 0) : 0) + (lid ? (parseFloat(lid.hpp) || 0) : 0) + (parseFloat(p.printCost) || 0) + (parseFloat(p.packCost) || 0);
 
                 return `
                     <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm hover:border-shopee-300 transition">
@@ -1290,7 +1497,7 @@
                                 </div>
                                 <h4 class="font-bold text-slate-900 text-base">${p.name}</h4>
                                 <p class="text-xs text-slate-500">
-                                    Bahan: <strong>${stock ? stock.name : 'Item stok terhapus'}</strong> • Modal: ${formatRupiah(p.totalHppPerPcs)}/pcs • Laba Bersih: <span class="text-emerald-600 font-semibold">${formatRupiah(p.margin)}/pcs</span> • Fee Shopee: ${totalFee}%
+                                    Bahan: <strong>${stock ? `${stock.name} (Avg ${formatRupiah(stock.hpp)})` : 'Item stok terhapus'}</strong> • Modal: ${formatRupiah(liveHpp)}/pcs • Laba: <span class="text-emerald-600 font-semibold">${formatRupiah(p.margin)}/pcs</span> • Fee: ${totalFee}%
                                 </p>
                             </div>
 
@@ -1357,31 +1564,88 @@
 
 
         // =========================================================================
-        // 8. SALES TRACKER & ATOMIC BATCH STOCK DEDUCTION IN FIRESTORE
+        // 8. SALES TRACKER, AUTO INVOICE LINTAS TAHUN & BATCH STOCK DEDUCTION
         // =========================================================================
         window.openNewOrderModal = function() {
-            if (appState.patterns.length === 0) {
-                showToast('Buat minimal 1 Pattern Harga terlebih dahulu!', 'warning');
-                switchTab('patterns');
-                return;
-            }
             document.getElementById('order-form').reset();
             document.getElementById('ord-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('ord-channel').value = 'Shopee';
 
             const patSelect = document.getElementById('ord-pattern-id');
-            patSelect.innerHTML = appState.patterns.map(p =>
-                `<option value="${p.id}">${p.name} — (${formatRupiah(p.unitPrice)}/pcs)</option>`
-            ).join('');
+            patSelect.innerHTML = appState.patterns.length > 0
+                ? appState.patterns.map(p => `<option value="${p.id}">${p.name} — (${formatRupiah(p.unitPrice)}/pcs)</option>`).join('')
+                : `<option value="">-- Belum ada Pattern Shopee --</option>`;
 
-            onOrderPatternChange();
+            const directStockSelect = document.getElementById('ord-direct-stock-id');
+            directStockSelect.innerHTML = appState.stocks.length > 0
+                ? appState.stocks.map(s => `<option value="${s.id}">${s.name} (Stok: ${formatNumber(s.qty)} pcs • Avg: ${formatRupiah(s.hpp)})</option>`).join('')
+                : `<option value="">-- Belum ada Stok Gudang --</option>`;
+
+            handleOrderDateOrChannelChange();
             openModal('modal-order');
         };
 
-        window.onOrderPatternChange = function() {
-            const patId = document.getElementById('ord-pattern-id').value;
+        window.handleOrderDateOrChannelChange = function() {
             const channel = document.getElementById('ord-channel').value;
+            const dateVal = document.getElementById('ord-date').value || new Date().toISOString().split('T')[0];
+            const year = dateVal.slice(0, 4) || new Date().getFullYear();
+
+            const isNonMarketplace = isOfflineOrWhatsApp(channel);
+            const codeInput = document.getElementById('ord-code');
+            const codeLabel = document.getElementById('ord-code-label');
+            const autoHint = document.getElementById('ord-auto-inv-hint');
+            const patWrapper = document.getElementById('ord-pattern-wrapper');
+            const directWrapper = document.getElementById('ord-direct-stock-wrapper');
+
+            if (isNonMarketplace) {
+                patWrapper.classList.add('hidden');
+                directWrapper.classList.remove('hidden');
+                codeLabel.textContent = 'No. Pesanan & Invoice Otomatis';
+                codeInput.readOnly = true;
+                codeInput.classList.add('bg-slate-100', 'text-slate-700', 'font-semibold');
+                codeInput.placeholder = `INV/AHS/${year}/XXXX`;
+                codeInput.value = getNextInvoicePreview(year);
+                autoHint.classList.remove('hidden');
+                document.getElementById('ord-fee-pct').value = 0;
+                onDirectStockChange();
+            } else {
+                patWrapper.classList.remove('hidden');
+                directWrapper.classList.add('hidden');
+                codeLabel.textContent = 'No. Pesanan Marketplace';
+                codeInput.readOnly = false;
+                codeInput.classList.remove('bg-slate-100', 'text-slate-700', 'font-semibold');
+                codeInput.placeholder = 'Contoh: 261127ABCD12';
+                if (codeInput.value.startsWith('INV/AHS/')) codeInput.value = '';
+                autoHint.classList.add('hidden');
+                onOrderPatternChange();
+            }
+        };
+
+        function getNextInvoicePreview(year) {
+            const prefix = `INV/AHS/${year}/`;
+            let maxNum = 0;
+            appState.orders.forEach(o => {
+                if (o.code && o.code.startsWith(prefix)) {
+                    const numPart = parseInt(o.code.replace(prefix, ''), 10);
+                    if (!isNaN(numPart) && numPart > maxNum) {
+                        maxNum = numPart;
+                    }
+                }
+            });
+            return `${prefix}${String(maxNum + 1).padStart(4, '0')}`;
+        }
+
+        window.onOrderPatternChange = function() {
+            const channel = document.getElementById('ord-channel').value;
+            if (isOfflineOrWhatsApp(channel)) return;
+
+            const patId = document.getElementById('ord-pattern-id').value;
             const pat = appState.patterns.find(p => p.id === patId);
-            if (!pat) return;
+            if (!pat) {
+                document.getElementById('ord-stock-availability').textContent = 'Pilih atau buat pattern Shopee terlebih dahulu.';
+                recalcOrderTotal();
+                return;
+            }
 
             document.getElementById('ord-qty').value = pat.minQty;
             document.getElementById('ord-unit-price').value = pat.unitPrice;
@@ -1395,11 +1659,23 @@
             const stock = appState.stocks.find(s => s.id === pat.stockId);
             const availEl = document.getElementById('ord-stock-availability');
             if (stock) {
-                availEl.innerHTML = `Stok Gudang <strong>${stock.name}</strong>: <span class="${stock.qty <= stock.minAlert ? 'text-red-600 font-bold' : 'text-emerald-600 font-bold'}">${formatNumber(stock.qty)} pcs</span>`;
+                availEl.innerHTML = `Stok Gudang <strong>${stock.name}</strong>: <span class="${stock.qty <= stock.minAlert ? 'text-red-600 font-bold' : 'text-emerald-600 font-bold'}">${formatNumber(stock.qty)} pcs</span> (HPP Avg: ${formatRupiah(stock.hpp)})`;
             } else {
-                availEl.textContent = 'Stok bahan terkait tidak ditemukan.';
+                availEl.innerHTML = `<span class="text-amber-700">Stok bahan terkait tidak ditemukan (pastikan item stok ada di menu Stok Cup & Bahan).</span>`;
             }
 
+            recalcOrderTotal();
+        };
+
+        window.onDirectStockChange = function() {
+            const stockId = document.getElementById('ord-direct-stock-id').value;
+            const stock = appState.stocks.find(s => s.id === stockId);
+            const infoEl = document.getElementById('ord-direct-stock-info');
+            if (stock) {
+                infoEl.innerHTML = `Tersedia: <strong>${formatNumber(stock.qty)} pcs</strong> • HPP Average saat ini: <strong>${formatRupiah(stock.hpp)}/pcs</strong>`;
+            } else {
+                infoEl.textContent = 'Tambahkan item stok di menu Stok Cup & Bahan jika ingin memotong stok otomatis.';
+            }
             recalcOrderTotal();
         };
 
@@ -1419,16 +1695,54 @@
             e.preventDefault();
             if (!currentUser) return;
 
-            const patId = document.getElementById('ord-pattern-id').value;
-            const pat = appState.patterns.find(p => p.id === patId);
+            const channel = document.getElementById('ord-channel').value;
+            const isNonMarketplace = isOfflineOrWhatsApp(channel);
             const qty = parseInt(document.getElementById('ord-qty').value) || 0;
+            const dateVal = document.getElementById('ord-date').value || new Date().toISOString().split('T')[0];
+            const year = dateVal.slice(0, 4) || new Date().getFullYear();
 
-            if (!pat || qty <= 0) return;
+            if (qty <= 0) return;
 
-            const stock = appState.stocks.find(s => s.id === pat.stockId);
-            if (stock && stock.qty < qty) {
-                showToast(`Stok ${stock.name} tidak mencukupi! (Sisa: ${formatNumber(stock.qty)} pcs)`, 'error');
-                return;
+            let patternId = '';
+            let patternName = '';
+            let stockId = '';
+            let lidId = '';
+            let hppPerPcs = 0;
+
+            if (isNonMarketplace) {
+                stockId = document.getElementById('ord-direct-stock-id').value;
+                const stock = appState.stocks.find(s => s.id === stockId);
+                if (!stock) {
+                    showToast("Pilih item stok gudang terlebih dahulu untuk penjualan Offline/WA!", "warning");
+                    return;
+                }
+                if (stock.qty < qty) {
+                    showToast(`Stok ${stock.name} tidak mencukupi! (Sisa: ${formatNumber(stock.qty)} pcs)`, 'error');
+                    return;
+                }
+                patternName = `${stock.name} (${channel} Direct)`;
+                hppPerPcs = parseFloat(stock.hpp) || 0;
+            } else {
+                const patId = document.getElementById('ord-pattern-id').value;
+                const pat = appState.patterns.find(p => p.id === patId);
+                if (!pat) {
+                    showToast("Pilih pattern Shopee terlebih dahulu!", "warning");
+                    return;
+                }
+                const stock = appState.stocks.find(s => s.id === pat.stockId);
+                if (stock && stock.qty < qty) {
+                    showToast(`Stok ${stock.name} tidak mencukupi! (Sisa: ${formatNumber(stock.qty)} pcs)`, 'error');
+                    return;
+                }
+                patternId = pat.id;
+                patternName = pat.name;
+                stockId = pat.stockId;
+                lidId = pat.lidId || '';
+                const lidStock = lidId ? appState.stocks.find(s => s.id === lidId) : null;
+                hppPerPcs = (stock ? (parseFloat(stock.hpp) || 0) : 0) +
+                            (lidStock ? (parseFloat(lidStock.hpp) || 0) : 0) +
+                            (parseFloat(pat.printCost) || 0) +
+                            (parseFloat(pat.packCost) || 0);
             }
 
             const btn = document.getElementById('btn-submit-order');
@@ -1436,38 +1750,55 @@
             btn.textContent = "Menyimpan ke Cloud...";
 
             try {
+                let finalCode = document.getElementById('ord-code').value.trim();
+
+                if (isNonMarketplace) {
+                    const counterRef = getDocRef('invoice_counters', `ahs_${year}`);
+                    finalCode = await runTransaction(db, async (transaction) => {
+                        const counterDoc = await transaction.get(counterRef);
+                        const currentSeq = counterDoc.exists() ? (counterDoc.data().lastSeq || 0) : 0;
+                        const nextSeq = currentSeq + 1;
+                        transaction.set(counterRef, {
+                            year: String(year),
+                            lastSeq: nextSeq,
+                            updatedAt: Date.now()
+                        }, { merge: true });
+                        return `INV/AHS/${year}/${String(nextSeq).padStart(4, '0')}`;
+                    });
+                } else if (!finalCode) {
+                    finalCode = `ORD-${year}-${Math.floor(1000 + Math.random() * 9000)}`;
+                }
+
                 const batch = writeBatch(db);
 
-                if (stock) {
-                    batch.update(getDocRef('stocks', stock.id), {
+                if (stockId && appState.stocks.some(s => s.id === stockId)) {
+                    batch.update(getDocRef('stocks', stockId), {
                         qty: increment(-qty)
                     });
                 }
 
-                if (pat.lidId) {
-                    const lidStock = appState.stocks.find(s => s.id === pat.lidId);
-                    if (lidStock) {
-                        batch.update(getDocRef('stocks', lidStock.id), {
-                            qty: increment(-qty)
-                        });
-                    }
+                if (lidId && appState.stocks.some(s => s.id === lidId)) {
+                    batch.update(getDocRef('stocks', lidId), {
+                        qty: increment(-qty)
+                    });
                 }
 
                 const newOrderRef = doc(getColRef('orders'));
                 batch.set(newOrderRef, {
-                    date: document.getElementById('ord-date').value,
+                    date: dateVal,
                     createdAt: Date.now(),
-                    code: document.getElementById('ord-code').value.trim() || ('INV-' + Math.floor(1000 + Math.random() * 9000)),
+                    code: finalCode,
+                    invoiceNumber: isNonMarketplace ? finalCode : '',
                     customer: document.getElementById('ord-customer').value.trim(),
-                    channel: document.getElementById('ord-channel').value,
-                    patternId: pat.id,
-                    patternName: pat.name,
-                    stockId: pat.stockId,
-                    lidId: pat.lidId || '',
+                    channel: channel,
+                    patternId: patternId,
+                    patternName: patternName,
+                    stockId: stockId,
+                    lidId: lidId,
                     qty: qty,
                     unitPrice: parseFloat(document.getElementById('ord-unit-price').value) || 0,
-                    hppPerPcs: pat.totalHppPerPcs || 0,
-                    feePct: parseFloat(document.getElementById('ord-fee-pct').value) || 0,
+                    hppPerPcs: hppPerPcs,
+                    feePct: isNonMarketplace ? 0 : (parseFloat(document.getElementById('ord-fee-pct').value) || 0),
                     status: document.getElementById('ord-status').value,
                     notes: document.getElementById('ord-notes').value.trim(),
                     createdBy: currentUser.email || 'admin'
@@ -1475,7 +1806,7 @@
 
                 await batch.commit();
                 closeModal('modal-order');
-                showToast(`Order dicatat di Cloud & stok ${stock ? stock.name : 'cup'} terpotong ${formatNumber(qty)} pcs!`);
+                showToast(`Pesanan ${finalCode} tersimpan & stok terpotong ${formatNumber(qty)} pcs!`);
             } catch (err) {
                 console.error(err);
                 showToast("Gagal menyimpan pesanan: " + err.message, "error");
@@ -1545,6 +1876,22 @@
             }
         };
 
+        window.copyOrderInvoiceText = function(orderId) {
+            const o = appState.orders.find(item => item.id === orderId);
+            if (!o) return;
+            const total = o.qty * o.unitPrice;
+            const text = `*INVOICE / NOTA PESANAN*\n` +
+                         `No. Invoice : ${o.code}\n` +
+                         `Tanggal     : ${o.date}\n` +
+                         `Pembeli/Brand: ${o.customer}\n` +
+                         `Item/Pattern: ${o.patternName}\n` +
+                         `Jumlah      : ${formatNumber(o.qty)} pcs @ ${formatRupiah(o.unitPrice)}\n` +
+                         `*Total Tagihan: ${formatRupiah(total)}*\n` +
+                         (o.notes ? `Catatan     : ${o.notes}\n` : '') +
+                         `Status      : ${o.status}`;
+            copyTextToClipboard(text, `Invoice ${o.code} disalin! Siap dikirim ke WA/pelanggan.`);
+        };
+
         function getStatusBadge(status) {
             const map = {
                 'Perlu Desain': 'bg-purple-100 text-purple-800 border-purple-200',
@@ -1583,7 +1930,7 @@
                 const net = gross * (1 - ((o.feePct || 0) / 100));
                 const channelBadge = o.channel === 'Shopee'
                     ? `<span class="px-2 py-0.5 text-[10px] font-bold rounded bg-shopee-100 text-shopee-600">Shopee</span>`
-                    : `<span class="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-100 text-slate-700">${o.channel}</span>`;
+                    : `<span class="px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-100 text-emerald-700">${o.channel}</span>`;
 
                 return `
                     <tr class="hover:bg-slate-50/80 transition">
@@ -1617,9 +1964,14 @@
                             </select>
                         </td>
                         <td class="py-3.5 px-4 align-top text-center">
-                            <button onclick="deleteOrder('${o.id}')" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition" title="Hapus & Kembalikan Stok">
-                                <i data-lucide="trash-2" class="w-4 h-4"></i>
-                            </button>
+                            <div class="inline-flex items-center gap-1">
+                                <button onclick="copyOrderInvoiceText('${o.id}')" class="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition" title="Salin Invoice">
+                                    <i data-lucide="file-text" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="deleteOrder('${o.id}')" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition" title="Hapus & Kembalikan Stok">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 `;
@@ -1632,7 +1984,7 @@
                 showToast('Belum ada data penjualan untuk diexport.', 'warning');
                 return;
             }
-            const headers = ['Tanggal', 'No_Pesanan', 'Channel', 'Pembeli', 'Pattern_Cup', 'Qty_Pcs', 'Harga_Satuan', 'Omzet_Kotor', 'Potongan_Fee_Pct', 'Estimasi_Cair', 'Status', 'Catatan'];
+            const headers = ['Tanggal', 'No_Invoice_Pesanan', 'Channel', 'Pembeli', 'Item_Pattern', 'Qty_Pcs', 'Harga_Satuan', 'Omzet_Kotor', 'Potongan_Fee_Pct', 'Estimasi_Cair', 'Status', 'Catatan'];
             const rows = appState.orders.map(o => {
                 const gross = o.qty * o.unitPrice;
                 const net = Math.round(gross * (1 - ((o.feePct || 0) / 100)));
@@ -1665,7 +2017,7 @@
 
 
         // =========================================================================
-        // 9. INVENTORY MANAGEMENT IN FIRESTORE
+        // 9. INVENTORY MANAGEMENT & HPP AVERAGE (WEIGHTED AVERAGE)
         // =========================================================================
         window.openStockModal = function(id = null) {
             document.getElementById('stock-form').reset();
@@ -1721,10 +2073,35 @@
             if (!item) return;
             document.getElementById('restock-id').value = item.id;
             document.getElementById('restock-item-name').textContent = item.name;
-            document.getElementById('restock-current-qty').textContent = `Stok saat ini: ${formatNumber(item.qty)} pcs (HPP: ${formatRupiah(item.hpp)})`;
+            document.getElementById('restock-current-qty').textContent = `Stok lama: ${formatNumber(item.qty)} pcs • HPP Avg lama: ${formatRupiah(item.hpp)}/pcs`;
             document.getElementById('restock-add-qty').value = 1000;
             document.getElementById('restock-new-hpp').value = item.hpp;
+            document.getElementById('restock-record-expense').checked = true;
+            calculateRestockAvgPreview();
             openModal('modal-restock');
+        };
+
+        window.calculateRestockAvgPreview = function() {
+            const id = document.getElementById('restock-id').value;
+            const item = appState.stocks.find(s => s.id === id);
+            if (!item) return;
+
+            const oldQty = Math.max(0, parseInt(item.qty) || 0);
+            const oldHpp = Math.max(0, parseFloat(item.hpp) || 0);
+            const addQty = Math.max(0, parseInt(document.getElementById('restock-add-qty').value) || 0);
+            const newPrice = Math.max(0, parseFloat(document.getElementById('restock-new-hpp').value) || 0);
+
+            const totalQty = oldQty + addQty;
+            const purchaseCost = addQty * newPrice;
+            const newAvgHpp = totalQty > 0
+                ? ((oldQty * oldHpp) + purchaseCost) / totalQty
+                : newPrice;
+
+            document.getElementById('restock-preview-total-qty').textContent = `${formatNumber(totalQty)} pcs`;
+            document.getElementById('restock-preview-purchase-cost').textContent = formatRupiah(purchaseCost);
+            document.getElementById('restock-preview-new-avg').textContent = `${formatRupiah(newAvgHpp)} / pcs`;
+
+            return { totalQty, purchaseCost, newAvgHpp, addQty };
         };
 
         window.submitRestock = async function(e) {
@@ -1732,26 +2109,44 @@
             if (!currentUser) return;
 
             const id = document.getElementById('restock-id').value;
-            const addQty = parseInt(document.getElementById('restock-add-qty').value) || 0;
-            const newHpp = parseFloat(document.getElementById('restock-new-hpp').value);
-
             const item = appState.stocks.find(s => s.id === id);
-            if (!item || addQty <= 0) return;
+            if (!item) return;
 
-            const updatePayload = {
-                qty: increment(addQty),
-                updatedAt: Date.now()
-            };
-            if (!isNaN(newHpp) && newHpp >= 0) {
-                updatePayload.hpp = newHpp;
-            }
+            const calc = calculateRestockAvgPreview();
+            if (calc.addQty <= 0) return;
+
+            const recordExpense = document.getElementById('restock-record-expense').checked;
+            const todayStr = new Date().toISOString().split('T')[0];
 
             try {
-                await updateDoc(getDocRef('stocks', id), updatePayload);
+                const batch = writeBatch(db);
+
+                batch.update(getDocRef('stocks', id), {
+                    qty: calc.totalQty,
+                    hpp: Number(calc.newAvgHpp.toFixed(2)),
+                    updatedAt: Date.now()
+                });
+
+                if (recordExpense && calc.purchaseCost > 0) {
+                    const expRef = doc(getColRef('expenses'));
+                    batch.set(expRef, {
+                        date: todayStr,
+                        createdAt: Date.now(),
+                        category: 'Bahan Baku Cup & Lid',
+                        description: `Restock ${item.name} (+${formatNumber(calc.addQty)} pcs @ ${formatRupiah(calc.purchaseCost / calc.addQty)} → HPP Avg ${formatRupiah(calc.newAvgHpp)})`,
+                        amount: Math.round(calc.purchaseCost),
+                        method: 'Transfer Bank',
+                        source: 'restock_auto',
+                        stockId: id,
+                        createdBy: currentUser.email || 'admin'
+                    });
+                }
+
+                await batch.commit();
                 closeModal('modal-restock');
-                showToast(`Berhasil menambah +${formatNumber(addQty)} pcs ke ${item.name}!`);
+                showToast(`Restock +${formatNumber(calc.addQty)} pcs sukses! HPP Average baru: ${formatRupiah(calc.newAvgHpp)}/pcs.`);
             } catch (err) {
-                showToast('Gagal menambah restock: ' + err.message, 'error');
+                showToast('Gagal menyimpan restock: ' + err.message, 'error');
             }
         };
 
@@ -1774,7 +2169,7 @@
 
             grid.innerHTML = appState.stocks.map(s => {
                 const isLow = s.qty <= s.minAlert;
-                const assetValue = s.qty * s.hpp;
+                const assetValue = s.qty * (parseFloat(s.hpp) || 0);
                 return `
                     <div class="bg-white p-5 rounded-2xl border ${isLow ? 'border-red-300 ring-1 ring-red-100' : 'border-slate-200'} shadow-sm flex flex-col justify-between">
                         <div>
@@ -1786,7 +2181,7 @@
                                 }
                             </div>
                             <h3 class="font-bold text-slate-900 text-base">${s.name}</h3>
-                            <p class="text-xs text-slate-500 mt-0.5">HPP Modal: <strong class="text-slate-800">${formatRupiah(s.hpp)}</strong> / pcs • Nilai Aset: ${formatRupiah(assetValue)}</p>
+                            <p class="text-xs text-slate-500 mt-0.5">HPP Average: <strong class="text-slate-800">${formatRupiah(s.hpp)}</strong> / pcs • Nilai Stok: ${formatRupiah(assetValue)}</p>
                             
                             <div class="my-4 p-3 rounded-xl ${isLow ? 'bg-red-50' : 'bg-slate-50'} flex items-baseline justify-between">
                                 <span class="text-xs text-slate-500">Sisa Stok Gudang</span>
@@ -1797,7 +2192,7 @@
                         <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
                             <button onclick="openRestockModal('${s.id}')" class="flex-grow py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl transition flex items-center justify-center gap-1.5">
                                 <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
-                                Restock Masuk
+                                Restock & HPP Avg
                             </button>
                             <button onclick="openStockModal('${s.id}')" class="p-2 text-slate-600 hover:bg-slate-100 rounded-xl border border-slate-200 transition" title="Edit Item">
                                 <i data-lucide="edit-3" class="w-4 h-4"></i>
@@ -1814,11 +2209,190 @@
 
 
         // =========================================================================
-        // 10. REFRESH ALL VIEWS & STARTUP
+        // 10. KEUANGAN, PENGELUARAN & LAPORAN LABA RUGI
+        // =========================================================================
+        function filterByFinancePeriod(dateStr, period) {
+            if (!dateStr) return period === 'all';
+            const now = new Date();
+            const todayStr = now.toISOString().split('T')[0];
+            if (period === 'today') return dateStr === todayStr;
+            if (period === 'month') return dateStr.startsWith(todayStr.slice(0, 7));
+            if (period === 'year') return dateStr.startsWith(todayStr.slice(0, 4));
+            return true;
+        }
+
+        window.saveExpenseItem = async function(e) {
+            e.preventDefault();
+            if (!currentUser) return;
+
+            const amount = parseFloat(document.getElementById('exp-amount').value) || 0;
+            if (amount <= 0) return;
+
+            const obj = {
+                date: document.getElementById('exp-date').value || new Date().toISOString().split('T')[0],
+                createdAt: Date.now(),
+                category: document.getElementById('exp-category').value,
+                description: document.getElementById('exp-desc').value.trim(),
+                amount: Math.round(amount),
+                method: document.getElementById('exp-method').value,
+                source: 'manual',
+                createdBy: currentUser.email || 'admin'
+            };
+
+            try {
+                await addDoc(getColRef('expenses'), obj);
+                document.getElementById('expense-form').reset();
+                document.getElementById('exp-date').value = new Date().toISOString().split('T')[0];
+                showToast('Pengeluaran berhasil dicatat ke Cloud!');
+            } catch (err) {
+                showToast('Gagal menyimpan pengeluaran: ' + err.message, 'error');
+            }
+        };
+
+        window.deleteExpenseItem = async function(id) {
+            if (!currentUser) return;
+            try {
+                await deleteDoc(getDocRef('expenses', id));
+                showToast('Catatan pengeluaran dihapus dari Cloud.', 'warning');
+            } catch (err) {
+                showToast('Gagal menghapus pengeluaran: ' + err.message, 'error');
+            }
+        };
+
+        window.renderFinanceView = function() {
+            const period = document.getElementById('finance-period').value;
+
+            const validOrders = appState.orders.filter(o => o.status !== 'Dibatalkan' && filterByFinancePeriod(o.date, period));
+            const periodExpenses = appState.expenses.filter(e => filterByFinancePeriod(e.date, period));
+
+            let grossIncome = 0;
+            let netIncome = 0;
+            validOrders.forEach(o => {
+                const gross = o.qty * o.unitPrice;
+                const net = gross * (1 - ((o.feePct || 0) / 100));
+                grossIncome += gross;
+                netIncome += net;
+            });
+
+            const totalExp = periodExpenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+            const netProfit = netIncome - totalExp;
+            const marginPct = netIncome > 0 ? ((netProfit / netIncome) * 100).toFixed(1) : '0.0';
+
+            document.getElementById('fin-income-net').textContent = formatRupiah(netIncome);
+            document.getElementById('fin-income-gross').textContent = `Omzet Kotor: ${formatRupiah(grossIncome)}`;
+            document.getElementById('fin-expense-total').textContent = formatRupiah(totalExp);
+            document.getElementById('fin-expense-count').textContent = `Dari ${periodExpenses.length} catatan pengeluaran`;
+
+            const profitEl = document.getElementById('fin-net-profit');
+            profitEl.textContent = formatRupiah(netProfit);
+            profitEl.className = `text-2xl font-extrabold mt-2 ${netProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+            document.getElementById('fin-margin-pct').textContent = `Margin Arus Kas: ${marginPct}%`;
+
+            const categories = [
+                'Bahan Baku Cup & Lid',
+                'Pembelian Alat & Bahan Sablon',
+                'Biaya Pemeliharaan',
+                'Biaya Transportasi',
+                'Gaji & Upah',
+                'Biaya Lain-lain'
+            ];
+
+            const breakdownEl = document.getElementById('finance-category-breakdown');
+            breakdownEl.innerHTML = categories.map(cat => {
+                const catSum = periodExpenses
+                    .filter(e => e.category === cat)
+                    .reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+                const share = totalExp > 0 ? Math.min(100, Math.round((catSum / totalExp) * 100)) : 0;
+
+                return `
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs">
+                            <span class="font-semibold text-slate-700">${cat}</span>
+                            <span class="font-bold text-slate-900">${formatRupiah(catSum)} <span class="text-slate-400 font-normal">(${share}%)</span></span>
+                        </div>
+                        <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div class="h-full bg-rose-500 rounded-full transition-all duration-300" style="width: ${share}%"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            renderExpensesTable(periodExpenses);
+        };
+
+        window.renderExpensesTable = function(preFiltered = null) {
+            const period = document.getElementById('finance-period').value;
+            const search = (document.getElementById('expense-search').value || '').toLowerCase();
+            const catFilter = document.getElementById('expense-filter-cat').value;
+
+            const baseList = preFiltered || appState.expenses.filter(e => filterByFinancePeriod(e.date, period));
+            const filtered = baseList.filter(e => {
+                const matchSearch = (e.description || '').toLowerCase().includes(search) ||
+                                    (e.category || '').toLowerCase().includes(search);
+                const matchCat = catFilter === 'all' || e.category === catFilter;
+                return matchSearch && matchCat;
+            });
+
+            const tbody = document.getElementById('expenses-table-body');
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-400 text-xs">Belum ada data pengeluaran pada periode ini.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(e => `
+                <tr class="hover:bg-slate-50/80 transition">
+                    <td class="py-3 px-4 text-xs text-slate-600 whitespace-nowrap">${e.date}</td>
+                    <td class="py-3 px-4">
+                        <span class="px-2.5 py-0.5 text-[11px] font-semibold rounded-full bg-rose-50 text-rose-700 border border-rose-200">${e.category}</span>
+                    </td>
+                    <td class="py-3 px-4 text-xs font-medium text-slate-800">${e.description}</td>
+                    <td class="py-3 px-4 text-xs text-slate-500 whitespace-nowrap">${e.method || '-'}</td>
+                    <td class="py-3 px-4 text-right text-xs font-bold text-rose-600 whitespace-nowrap">${formatRupiah(e.amount)}</td>
+                    <td class="py-3 px-4 text-center">
+                        <button onclick="deleteExpenseItem('${e.id}')" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition" title="Hapus Pengeluaran">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+            lucide.createIcons();
+        };
+
+        window.exportFinanceCSV = function() {
+            const period = document.getElementById('finance-period').value;
+            const list = appState.expenses.filter(e => filterByFinancePeriod(e.date, period));
+            if (list.length === 0) {
+                showToast('Belum ada data pengeluaran pada periode ini untuk diexport.', 'warning');
+                return;
+            }
+            const headers = ['Tanggal', 'Kategori', 'Keterangan', 'Metode_Bayar', 'Nominal_Rp'];
+            const rows = list.map(e => [
+                e.date,
+                `"${(e.category || '').replace(/"/g, '""')}"`,
+                `"${(e.description || '').replace(/"/g, '""')}"`,
+                `"${(e.method || '').replace(/"/g, '""')}"`,
+                e.amount
+            ].join(','));
+
+            const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows].join('\n');
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Laporan_Keuangan_Pengeluaran_${period}_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast('Laporan keuangan CSV/Excel berhasil diunduh!');
+        };
+
+
+        // =========================================================================
+        // 11. REFRESH ALL VIEWS & STARTUP
         // =========================================================================
         function refreshAllViews() {
             renderDashboard();
             renderSalesTable();
+            renderFinanceView();
             populatePatternDropdowns();
             renderPatternsList();
             renderInventoryGrid();
@@ -1827,6 +2401,7 @@
         }
 
         window.onload = function() {
+            document.getElementById('exp-date').value = new Date().toISOString().split('T')[0];
             lucide.createIcons();
             initFirebaseApp();
         };
