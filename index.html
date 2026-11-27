@@ -886,6 +886,11 @@
                     <p id="restock-current-qty" class="text-xs text-slate-600 mt-0.5"></p>
                 </div>
 
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Tanggal Pencatatan Restok *</label>
+                    <input type="date" id="restock-date" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-semibold text-slate-700 mb-1">Jumlah Stok Masuk (pcs) *</label>
@@ -2019,52 +2024,64 @@
         // =========================================================================
         // 9. INVENTORY MANAGEMENT & HPP AVERAGE (WEIGHTED AVERAGE)
         // =========================================================================
-        window.openStockModal = function(id = null) {
-            document.getElementById('stock-form').reset();
-            if (id) {
-                const item = appState.stocks.find(s => s.id === id);
-                if (!item) return;
-                document.getElementById('modal-stock-title').textContent = 'Edit Item Stok';
-                document.getElementById('stk-id').value = item.id;
-                document.getElementById('stk-name').value = item.name;
-                document.getElementById('stk-category').value = item.category;
-                document.getElementById('stk-size').value = item.size || '';
-                document.getElementById('stk-qty').value = item.qty;
-                document.getElementById('stk-min').value = item.minAlert;
-                document.getElementById('stk-hpp').value = item.hpp;
-            } else {
-                document.getElementById('modal-stock-title').textContent = 'Tambah Stok Cup Polos / Bahan';
-                document.getElementById('stk-id').value = '';
-            }
-            openModal('modal-stock');
+        window.openRestockModal = function(id) {
+            const item = appState.stocks.find(s => s.id === id);
+            if (!item) return;
+            document.getElementById('restock-id').value = item.id;
+            document.getElementById('restock-item-name').textContent = item.name;
+            document.getElementById('restock-current-qty').textContent = `Stok lama: ${formatNumber(item.qty)} pcs • HPP Avg lama: ${formatRupiah(item.hpp)}/pcs`;
+            document.getElementById('restock-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('restock-add-qty').value = 1000;
+            document.getElementById('restock-new-hpp').value = item.hpp;
+            document.getElementById('restock-record-expense').checked = true;
+            calculateRestockAvgPreview();
+            openModal('modal-restock');
         };
 
-        window.saveStockItem = async function(e) {
+        window.submitRestock = async function(e) {
             e.preventDefault();
             if (!currentUser) return;
 
-            const id = document.getElementById('stk-id').value;
-            const obj = {
-                name: document.getElementById('stk-name').value.trim(),
-                category: document.getElementById('stk-category').value,
-                size: document.getElementById('stk-size').value.trim(),
-                qty: parseInt(document.getElementById('stk-qty').value) || 0,
-                minAlert: parseInt(document.getElementById('stk-min').value) || 0,
-                hpp: parseFloat(document.getElementById('stk-hpp').value) || 0,
-                updatedAt: Date.now()
-            };
+            const id = document.getElementById('restock-id').value;
+            const item = appState.stocks.find(s => s.id === id);
+            if (!item) return;
+
+            const calc = calculateRestockAvgPreview();
+            if (calc.addQty <= 0) return;
+
+            const recordExpense = document.getElementById('restock-record-expense').checked;
+            const restockDate = document.getElementById('restock-date').value || new Date().toISOString().split('T')[0];
 
             try {
-                if (id) {
-                    await updateDoc(getDocRef('stocks', id), obj);
-                    showToast('Data stok diperbarui di Cloud!');
-                } else {
-                    await addDoc(getColRef('stocks'), obj);
-                    showToast('Item stok baru ditambahkan ke Cloud!');
+                const batch = writeBatch(db);
+
+                batch.update(getDocRef('stocks', id), {
+                    qty: calc.totalQty,
+                    hpp: Number(calc.newAvgHpp.toFixed(2)),
+                    lastRestockedDate: restockDate,
+                    updatedAt: Date.now()
+                });
+
+                if (recordExpense && calc.purchaseCost > 0) {
+                    const expRef = doc(getColRef('expenses'));
+                    batch.set(expRef, {
+                        date: restockDate,
+                        createdAt: Date.now(),
+                        category: 'Bahan Baku Cup & Lid',
+                        description: `Restock ${item.name} (+${formatNumber(calc.addQty)} pcs @ ${formatRupiah(calc.purchaseCost / calc.addQty)} → HPP Avg ${formatRupiah(calc.newAvgHpp)})`,
+                        amount: Math.round(calc.purchaseCost),
+                        method: 'Transfer Bank',
+                        source: 'restock_auto',
+                        stockId: id,
+                        createdBy: currentUser.email || 'admin'
+                    });
                 }
-                closeModal('modal-stock');
+
+                await batch.commit();
+                closeModal('modal-restock');
+                showToast(`Restock (${restockDate}) +${formatNumber(calc.addQty)} pcs sukses! HPP Average baru: ${formatRupiah(calc.newAvgHpp)}/pcs.`);
             } catch (err) {
-                showToast('Gagal menyimpan stok: ' + err.message, 'error');
+                showToast('Gagal menyimpan restock: ' + err.message, 'error');
             }
         };
 
