@@ -456,10 +456,15 @@
                                 <input type="number" id="exp-amount" required min="1" placeholder="Contoh: 125000" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-shopee-500">
                             </div>
 
-                            <button type="submit" id="btn-submit-expense" class="w-full py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold rounded-xl shadow-sm transition flex items-center justify-center gap-2">
-                                <i data-lucide="minus-circle" class="w-4 h-4"></i>
-                                <span>Simpan Pengeluaran ke Cloud</span>
-                            </button>
+                            <div class="flex gap-2">
+                                <button type="submit" id="btn-submit-expense" class="flex-grow py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold rounded-xl shadow-sm transition flex items-center justify-center gap-2">
+                                    <i data-lucide="minus-circle" class="w-4 h-4"></i>
+                                    <span id="btn-submit-expense-text">Simpan Pengeluaran ke Cloud</span>
+                                </button>
+                                <button type="button" id="btn-cancel-expense" onclick="resetExpenseForm()" class="hidden py-2.5 px-3 bg-slate-200 hover:bg-slate-300 text-slate-700 text-sm font-semibold rounded-xltransition"> 
+                                    Batal
+                                </button>
+                            </div>
                         </form>
                     </div>
 
@@ -2237,34 +2242,76 @@
             return true;
         }
 
+        window.editExpenseItem = function(id) {
+            const item = appState.expenses.find(e => e.id === id);
+            if (!item) return;
+
+            document.getElementById('exp-edit-id').value = item.id;
+            document.getElementById('exp-date').value = item.date || new Date().toISOString().split('T')[0];
+            document.getElementById('exp-method').value = item.method || 'Transfer Bank';
+            document.getElementById('exp-category').value = item.category || 'Biaya Lain-lain';
+            document.getElementById('exp-desc').value = item.description || '';
+            document.getElementById('exp-amount').value = item.amount || '';
+
+            document.getElementById('btn-submit-expense-text').textContent = 'Update Pengeluaran di Cloud';
+            document.getElementById('btn-cancel-expense').classList.remove('hidden');
+            document.getElementById('expense-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            safeRefreshIcons();
+        };
+
+        window.resetExpenseForm = function() {
+            document.getElementById('expense-form').reset();
+            document.getElementById('exp-edit-id').value = '';
+            document.getElementById('exp-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('btn-submit-expense-text').textContent = 'Simpan Pengeluaran ke Cloud';
+            document.getElementById('btn-cancel-expense').classList.add('hidden');
+            safeRefreshIcons();
+        };
+
         window.saveExpenseItem = async function(e) {
             e.preventDefault();
             if (!currentUser) return;
 
+            const editId = document.getElementById('exp-edit-id').value;
             const amount = parseFloat(document.getElementById('exp-amount').value) || 0;
             if (amount <= 0) return;
 
-            const obj = {
-                date: document.getElementById('exp-date').value || new Date().toISOString().split('T')[0],
-                createdAt: Date.now(),
-                category: document.getElementById('exp-category').value,
-                description: document.getElementById('exp-desc').value.trim(),
-                amount: Math.round(amount),
-                method: document.getElementById('exp-method').value,
-                source: 'manual',
-                createdBy: currentUser.email || 'admin'
-            };
+            const dateVal = document.getElementById('exp-date').value || new Date().toISOString().split('T')[0];
+            const categoryVal = document.getElementById('exp-category').value;
+            const descVal = document.getElementById('exp-desc').value.trim();
+            const methodVal = document.getElementById('exp-method').value;
 
             try {
-                await addDoc(getColRef('expenses'), obj);
-                document.getElementById('expense-form').reset();
-                document.getElementById('exp-date').value = new Date().toISOString().split('T')[0];
-                showToast('Pengeluaran berhasil dicatat ke Cloud!');
+                if (editId) {
+                    await updateDoc(getDocRef('expenses', editId), {
+                        date: dateVal,
+                        category: categoryVal,
+                        description: descVal,
+                        amount: Math.round(amount),
+                        method: methodVal,
+                        updatedAt: Date.now(),
+                        updatedBy: currentUser.email || 'admin'
+                    });
+                    showToast('Catatan pengeluaran berhasil diperbarui di Cloud!');
+                } else {
+                    await addDoc(getColRef('expenses'), {
+                        date: dateVal,
+                        createdAt: Date.now(),
+                        category: categoryVal,
+                        description: descVal,
+                        amount: Math.round(amount),
+                        method: methodVal,
+                        source: 'manual',
+                        createdBy: currentUser.email || 'admin'
+                    });
+                    showToast('Pengeluaran berhasil dicatat ke Cloud!');
+                }
+                resetExpenseForm();
             } catch (err) {
                 showToast('Gagal menyimpan pengeluaran: ' + err.message, 'error');
             }
         };
-
+                
         window.deleteExpenseItem = async function(id) {
             if (!currentUser) return;
             try {
@@ -2333,62 +2380,128 @@
                 `;
             }).join('');
 
-            renderExpensesTable(periodExpenses);
-        };
+        function escapeHtml(str) {
+            return String(str ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function escapeAttr(str) {
+            return String(str ?? '')
+                .replace(/\\/g, '\\\\')
+                .replace(/'/g, "\\'")
+                .replace(/"/g, '&quot;');
+        }
 
         window.renderExpensesTable = function(preFiltered = null) {
-            const period = document.getElementById('finance-period').value;
-            const search = (document.getElementById('expense-search').value || '').toLowerCase();
-            const catFilter = document.getElementById('expense-filter-cat').value;
+            const periodEl = document.getElementById('finance-period');
+            const searchEl = document.getElementById('expense-search');
+            const catFilterEl = document.getElementById('expense-filter-cat');
+            const tbody = document.getElementById('expenses-table-body');
 
-            const baseList = preFiltered || appState.expenses.filter(e => filterByFinancePeriod(e.date, period));
+            if (!tbody) return;
+
+            const period = periodEl ? periodEl.value : 'all';
+            const search = (searchEl ? searchEl.value : '').trim().toLowerCase();
+            const catFilter = catFilterEl ? catFilterEl.value : 'all';
+
+            const baseList = Array.isArray(preFiltered)
+                ? preFiltered
+                : appState.expenses.filter(e => filterByFinancePeriod(e.date, period));
+
             const filtered = baseList.filter(e => {
-                const matchSearch = (e.description || '').toLowerCase().includes(search) ||
-                                    (e.category || '').toLowerCase().includes(search);
+                const desc = (e.description || '').toLowerCase();
+                const cat = (e.category || '').toLowerCase();
+                const method = (e.method || '').toLowerCase();
+                const matchSearch = !search || desc.includes(search) || cat.includes(search) || method.includes(search);
                 const matchCat = catFilter === 'all' || e.category === catFilter;
                 return matchSearch && matchCat;
             });
 
-            const tbody = document.getElementById('expenses-table-body');
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-400 text-xs">Belum ada data pengeluaran pada periode ini.</td></tr>`;
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="py-8 px-4 text-center text-slate-400 text-xs">
+                            Belum ada data pengeluaran pada periode atau filter ini.
+                        </td>
+                    </tr>
+                `;
+                safeRefreshIcons();
                 return;
             }
 
-            tbody.innerHTML = filtered.map(e => `
-                <tr class="hover:bg-slate-50/80 transition">
-                    <td class="py-3 px-4 text-xs text-slate-600 whitespace-nowrap">${e.date}</td>
-                    <td class="py-3 px-4">
-                        <span class="px-2.5 py-0.5 text-[11px] font-semibold rounded-full bg-rose-50 text-rose-700 border border-rose-200">${e.category}</span>
-                    </td>
-                    <td class="py-3 px-4 text-xs font-medium text-slate-800">${e.description}</td>
-                    <td class="py-3 px-4 text-xs text-slate-500 whitespace-nowrap">${e.method || '-'}</td>
-                    <td class="py-3 px-4 text-right text-xs font-bold text-rose-600 whitespace-nowrap">${formatRupiah(e.amount)}</td>
-                    <td class="py-3 px-4 text-center">
-                        <button type="button" onclick="deleteExpenseItem('${e.id}')" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition" title="Hapus Pengeluaran">
-                            <i data-lucide="trash-2" class="w-4 h-4"></i>
-                        </button>
-                    </td>
-                </tr>
-            `).join('');
+            tbody.innerHTML = filtered.map(e => {
+                const safeId = escapeAttr(e.id);
+                const safeDate = escapeHtml(e.date || '-');
+                const safeCategory = escapeHtml(e.category || 'Biaya Lain-lain');
+                const safeDesc = escapeHtml(e.description || '-');
+                const safeMethod = escapeHtml(e.method || '-');
+                const isAutoRestock = e.source === 'restock_auto';
+
+                return `
+                    <tr class="hover:bg-slate-50/80 transition">
+                        <!-- Kolom 1: Tanggal -->
+                        <td class="py-3 px-4 text-xs text-slate-600 whitespace-nowrap align-top">
+                            ${safeDate}
+                        </td>
+
+                        <!-- Kolom 2: Kategori -->
+                        <td class="py-3 px-4 align-top">
+                            <div class="flex flex-wrap items-center gap-1.5">
+                                <span class="px-2.5 py-0.5 text-[11px] font-semibold rounded-full bg-rose-50 text-rose-700 border border-rose-200 whitespace-nowrap">
+                                    ${safeCategory}
+                                </span>
+                                ${isAutoRestock ? `
+                                    <span class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap">
+                                        Auto Restock
+                                    </span>
+                                ` : ''}
+                            </div>
+                        </td>
+
+                        <!-- Kolom 3: Keterangan -->
+                        <td class="py-3 px-4 text-xs font-medium text-slate-800 align-top">
+                            ${safeDesc}
+                        </td>
+
+                        <!-- Kolom 4: Metode Pembayaran -->
+                        <td class="py-3 px-4 text-xs text-slate-500 whitespace-nowrap align-top">
+                            ${safeMethod}
+                        </td>
+
+                        <!-- Kolom 5: Nominal -->
+                        <td class="py-3 px-4 text-right text-xs font-bold text-rose-600 whitespace-nowrap align-top">
+                            ${formatRupiah(e.amount)}
+                        </td>
+
+                        <!-- Kolom 6: Aksi (Edit & Hapus) -->
+                        <td class="py-3 px-4 text-center whitespace-nowrap align-top">
+                            <div class="inline-flex items-center gap-1">
+                                <button
+                                    type="button"
+                                    onclick="editExpenseItem('${safeId}')"
+                                    class="p-1.5 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg border border-transparent hover:border-indigo-200 transition"
+                                    title="Edit Pengeluaran">
+                                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                </button>
+                                <button
+                                    type="button"
+                                    onclick="deleteExpenseItem('${safeId}')"
+                                    class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg border border-transparent hover:border-red-200 transition"
+                                    title="Hapus Pengeluaran">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
             safeRefreshIcons();
         };
-
-        window.exportFinanceCSV = function() {
-            const period = document.getElementById('finance-period').value;
-            const list = appState.expenses.filter(e => filterByFinancePeriod(e.date, period));
-            if (list.length === 0) {
-                showToast('Belum ada data pengeluaran pada periode ini untuk diexport.', 'warning');
-                return;
-            }
-            const headers = ['Tanggal', 'Kategori', 'Keterangan', 'Metode_Bayar', 'Nominal_Rp'];
-            const rows = list.map(e => [
-                e.date,
-                `"${(e.category || '').replace(/"/g, '""')}"`,
-                `"${(e.description || '').replace(/"/g, '""')}"`,
-                `"${(e.method || '').replace(/"/g, '""')}"`,
-                e.amount
-            ].join(','));
 
             const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows].join('\n');
             const encodedUri = encodeURI(csvContent);
